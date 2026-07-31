@@ -1,0 +1,69 @@
+{
+  "cli": {
+    "version": ">= 5.9.0"
+  },
+  "build": {
+    "development": {
+      "developmentClient": true,
+      "distribution": "internal",
+      "node": "22.11.0",
+      "env": {
+        "NODE_OPTIONS": "--max-old-space-size=4096",
+        "EAS_NO_VCS": "1"
+      },
+      "cache": {
+        "disabled": true,
+        "key": "v6-reanimated-4.2.0"
+      },
+      "ios": {
+        "resourceClass": "m-medium",
+        "buildConfiguration": "Release",
+        "cocoapods": "1.16.2",
+        "image": "latest"
+      }
+    },
+    "development-simulator": {
+      "developmentClient": true,
+      "distribution": "internal",
+      "ios": {
+        "resourceClass": "m-medium",
+        "simulator": true
+      }
+    },
+    "preview": {
+      "distribution": "internal",
+      "ios": {
+        "resourceClass": "m-medium"
+      },
+      "android": {
+        "buildType": "apk"
+      }
+    },
+    "production": {
+      "ios": {
+        "resourceClass": "m-medium"
+      },
+      "android": {
+        "buildType": "app-bundle"
+      }
+    }
+  },
+  "submit": {
+    "production": {
+      "ios": {
+        "appleId": "akshat2706@icloud.com",
+        "ascAppId": "6756870548",
+        "appleTeamId": "C6MFV2ZNPW"
+      },
+      "android": {
+        "serviceAccountKeyPath": "./google-service-account.json",
+        "track": "production"
+      }
+    }
+  }
+}
+
+
+
+
+

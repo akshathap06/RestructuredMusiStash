@@ -1,0 +1,26 @@
+# Query: setMessages
+# ContextLines: 1
+
+5 results - 2 files
+
+src/features/messaging/screens/ChatScreen.tsx:
+   48    const insets = useSafeAreaInsets();
+   49:   const [messages, setMessages] = useState<Message[]>([]);
+   50    const [newMessage, setNewMessage] = useState('');
+
+   77          }));
+   78:         setMessages(typedMessages);
+   79        }
+
+  105          };
+  106:         setMessages(prev => [...prev, typedMessage]);
+  107          setNewMessage('');
+
+src/features/projects/screens/ProjectRequestDetailsScreen.tsx:
+   39    const [negotiations, setNegotiations] = useState<ProjectNegotiation[]>([]);
+   40:   const [messages, setMessages] = useState<ProjectMessage[]>([]);
+   41    const [loading, setLoading] = useState(true);
+
+  111        setNegotiations(negotiationsData);
+  112:       setMessages(messagesData);
+  113        setWorkflowStatus(workflowData);

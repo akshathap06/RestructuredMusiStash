@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Redirecting to MusiStash...</title>
+    <script>
+        // Redirect to deep link
+        const urlParams = new URLSearchParams(window.location.search);
+        const accountId = urlParams.get('account');
+        
+        // Try deep link first
+        window.location.href = 'musistash://stripe-return' + (accountId ? '?account=' + accountId : '');
+        
+        // Fallback: redirect to app store if deep link fails
+        setTimeout(function() {
+            // If still on this page after 2 seconds, redirect to app store
+            window.location.href = 'https://apps.apple.com/app/musistash';
+        }, 2000);
+    </script>
+</head>
+<body>
+    <div style="text-align: center; padding: 50px; font-family: Arial, sans-serif;">
+        <h1>Redirecting to MusiStash...</h1>
+        <p>If you are not redirected automatically, <a href="musistash://stripe-return">click here</a>.</p>
+    </div>
+</body>
+</html>
+
+

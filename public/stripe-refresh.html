@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Redirecting to MusiStash...</title>
+    <script>
+        // Redirect to deep link
+        window.location.href = 'musistash://stripe-refresh';
+        
+        // Fallback: redirect to app store if deep link fails
+        setTimeout(function() {
+            window.location.href = 'https://apps.apple.com/app/musistash';
+        }, 2000);
+    </script>
+</head>
+<body>
+    <div style="text-align: center; padding: 50px; font-family: Arial, sans-serif;">
+        <h1>Redirecting to MusiStash...</h1>
+        <p>If you are not redirected automatically, <a href="musistash://stripe-refresh">click here</a>.</p>
+    </div>
+</body>
+</html>
+
+

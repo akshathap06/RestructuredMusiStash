@@ -1,0 +1,87 @@
+{
+  "expo": {
+    "name": "MusiStash",
+    "slug": "musistash-mobile",
+    "version": "1.0.3",
+    "sdkVersion": "54.0.0",
+    "scheme": "musistash",
+    "orientation": "portrait",
+    "icon": "./assets/AppCoverLogo.png",
+    "userInterfaceStyle": "dark",
+    "splash": {
+      "image": "./assets/splash-cover.png",
+      "resizeMode": "cover",
+      "backgroundColor": "#000000"
+    },
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.musistash.mobile",
+      "buildNumber": "13",
+      "infoPlist": {
+        "NSCameraUsageDescription": "MusiStash needs camera access to take photos for your profile and project submissions.",
+        "NSPhotoLibraryUsageDescription": "MusiStash needs photo library access to select and upload images for your projects.",
+        "NSMicrophoneUsageDescription": "MusiStash needs microphone access to record audio for your music projects.",
+        "NSAppleMusicUsageDescription": "MusiStash may access your music library to help with project organization.",
+        "CFBundleDisplayName": "MusiStash",
+        "CFBundleName": "MusiStash"
+      },
+      "associatedDomains": [
+        "applinks:musistash.com",
+        "applinks:www.musistash.com"
+      ],
+      "config": {
+        "usesNonExemptEncryption": false
+      },
+      "scheme": "musistash",
+      "usesAppleSignIn": true
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/AppCoverLogo.png",
+        "backgroundColor": "#000000"
+      },
+      "package": "com.musistash.app",
+      "versionCode": 1,
+      "permissions": [
+        "android.permission.CAMERA",
+        "android.permission.READ_EXTERNAL_STORAGE",
+        "android.permission.WRITE_EXTERNAL_STORAGE",
+        "android.permission.RECORD_AUDIO",
+        "android.permission.READ_MEDIA_VISUAL_USER_SELECTED",
+        "android.permission.READ_MEDIA_IMAGES",
+        "android.permission.READ_MEDIA_VIDEO",
+        "android.permission.READ_MEDIA_AUDIO"
+      ],
+      "intentFilters": [
+        {
+          "action": "VIEW",
+          "data": {
+            "scheme": "musistash"
+          },
+          "category": [
+            "BROWSABLE",
+            "DEFAULT"
+          ]
+        }
+      ]
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      "expo-image-picker",
+      "expo-document-picker",
+      "expo-media-library",
+      "expo-camera",
+      "expo-apple-authentication"
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "213c71d1-2f5d-4300-b3df-6b1c8a349621"
+      }
+    }
+  }
+}

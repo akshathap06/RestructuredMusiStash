@@ -1,0 +1,26 @@
+# Dependencies
+node_modules/
+
+# Expo
+.expo/
+dist/
+web-build/
+
+# Environment — contains live Stripe keys, never commit
+.env
+.env.*
+
+# Native builds
+ios/Pods/
+ios/build/
+ios/DerivedData/
+android/build/
+android/app/build/
+android/.gradle/
+*.ipa
+*.apk
+*.aab
+
+# Misc
+.DS_Store
+*.log
