@@ -55,7 +55,7 @@ async function runSQL(sql) {
 }
 
 async function main() {
-  const migrationFile = path.join(__dirname, '../supabase/migrations/20241211_add_photo_url_columns.sql');
+  const migrationFile = path.join(__dirname, '../../supabase/migrations/20241211_add_photo_url_columns.sql');
   
   if (!fs.existsSync(migrationFile)) {
     console.error(`❌ Migration file not found: ${migrationFile}`);

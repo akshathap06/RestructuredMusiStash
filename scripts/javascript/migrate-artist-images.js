@@ -9,13 +9,13 @@
  * 
  * Usage:
  *   # Production run
- *   SUPABASE_SERVICE_KEY="your-key" node scripts/migrate-artist-images.js
+ *   SUPABASE_SERVICE_KEY="your-key" node scripts/javascript/migrate-artist-images.js
  * 
  *   # Dry-run (no changes, just shows what would happen)
- *   SUPABASE_SERVICE_KEY="your-key" DRY_RUN=true node scripts/migrate-artist-images.js
+ *   SUPABASE_SERVICE_KEY="your-key" DRY_RUN=true node scripts/javascript/migrate-artist-images.js
  * 
  *   # Custom domain (if using custom domain)
- *   SUPABASE_SERVICE_KEY="your-key" SUPABASE_URL="https://api.musistash.com" node scripts/migrate-artist-images.js
+ *   SUPABASE_SERVICE_KEY="your-key" SUPABASE_URL="https://api.musistash.com" node scripts/javascript/migrate-artist-images.js
  */
 
 const { createClient } = require('@supabase/supabase-js');
@@ -31,7 +31,7 @@ if (!SUPABASE_SERVICE_KEY) {
   console.log('\nTo get your service key:');
   console.log('1. Go to Supabase Dashboard → Settings → API');
   console.log('2. Copy the "service_role" key (NOT the anon key)');
-  console.log('3. Run: SUPABASE_SERVICE_KEY="your-key" node scripts/migrate-artist-images.js');
+  console.log('3. Run: SUPABASE_SERVICE_KEY="your-key" node scripts/javascript/migrate-artist-images.js');
   console.log('\nOptional flags:');
   console.log('  DRY_RUN=true          - Preview changes without applying');
   console.log('  SUPABASE_URL="..."    - Use custom domain');

@@ -42,7 +42,7 @@ Preview what will happen without making changes:
 
 ```bash
 cd /Users/akshatthapliyal/helpmsRecover/musistash-mobile-clean
-SUPABASE_SERVICE_KEY="your-service-role-key" DRY_RUN=true node scripts/migrate-artist-images.js
+SUPABASE_SERVICE_KEY="your-service-role-key" DRY_RUN=true node scripts/javascript/migrate-artist-images.js
 ```
 
 This will show:
@@ -57,7 +57,7 @@ This will show:
 Once you're satisfied with the dry run:
 
 ```bash
-SUPABASE_SERVICE_KEY="your-service-role-key" node scripts/migrate-artist-images.js
+SUPABASE_SERVICE_KEY="your-service-role-key" node scripts/javascript/migrate-artist-images.js
 ```
 
 ### Step 3: Using Custom Domain (Optional)
@@ -67,7 +67,7 @@ If you're using a custom domain for Supabase:
 ```bash
 SUPABASE_SERVICE_KEY="your-key" \
 SUPABASE_URL="https://api.musistash.com" \
-node scripts/migrate-artist-images.js
+node scripts/javascript/migrate-artist-images.js
 ```
 
 ## What the Script Does

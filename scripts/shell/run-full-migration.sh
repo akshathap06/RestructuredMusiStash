@@ -11,7 +11,7 @@ if [ -z "$SUPABASE_SERVICE_KEY" ]; then
   echo "❌ Error: SUPABASE_SERVICE_KEY environment variable is required"
   echo ""
   echo "Usage:"
-  echo "  SUPABASE_SERVICE_KEY=\"your-key\" ./scripts/run-full-migration.sh"
+  echo "  SUPABASE_SERVICE_KEY=\"your-key\" ./scripts/shell/run-full-migration.sh"
   exit 1
 fi
 
@@ -71,7 +71,7 @@ fi
 # Step 2: Run image migration
 echo "📦 Step 2: Running image migration..."
 echo ""
-node scripts/migrate-artist-images.js
+node scripts/javascript/migrate-artist-images.js
 
 echo ""
 echo "✅ Migration complete!"
