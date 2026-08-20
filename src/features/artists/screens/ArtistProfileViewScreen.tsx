@@ -602,21 +602,21 @@ const ArtistProfileViewScreen: React.FC<{ route: any; navigation: any }> = ({ ro
                 <Ionicons name="rocket" size={24} color="#3B82F6" />
               </View>
               <View style={styles.investInfoTextContainer}>
-                <Text style={styles.investInfoTitle}>Direct Capital Flow</Text>
+                <Text style={styles.investInfoTitle}>Paper capital flow</Text>
                 <Text style={styles.investInfoDesc}>
-                  Artists raise funds directly from fans through transparent, equity-based packages.
+                  Practice backing artists with simulated funds through transparent project packages. No real money moves.
                 </Text>
               </View>
             </View>
 
             <View style={styles.investInfoCard}>
               <View style={styles.investInfoIcon}>
-                <Ionicons name="trending-up" size={24} color="#3B82F6" />
+                <Ionicons name="trending-up" size={24} color="#8B5CF6" />
               </View>
               <View style={styles.investInfoTextContainer}>
-                <Text style={styles.investInfoTitle}>Share in Success</Text>
+                <Text style={styles.investInfoTitle}>Simulated portfolio</Text>
                 <Text style={styles.investInfoDesc}>
-                  Fans become stakeholders, investing in artists they believe in and sharing future profits.
+                  Track hypothetical performance while we gather demand signals before any real-money launch.
                 </Text>
               </View>
             </View>
@@ -628,7 +628,7 @@ const ArtistProfileViewScreen: React.FC<{ route: any; navigation: any }> = ({ ro
               <View style={styles.investInfoTextContainer}>
                 <Text style={styles.investInfoTitle}>AI-Powered Insights</Text>
                 <Text style={styles.investInfoDesc}>
-                  Our AI analyzes trends and data to help you discover promising talent and predict ROI.
+                  Resonance and similarity scores help explain momentum. Scores are signals, not guarantees.
                 </Text>
               </View>
             </View>
@@ -653,7 +653,7 @@ const ArtistProfileViewScreen: React.FC<{ route: any; navigation: any }> = ({ ro
                   color="#FFF"
                 />
                 <Text style={styles.investCTAText}>
-                  {hasRegisteredInterest ? "You're on the list!" : 'Join the Investment Movement'}
+                  {hasRegisteredInterest ? "You're on the list!" : 'Join paper-backing waitlist'}
                 </Text>
               </>
             )}
@@ -661,7 +661,7 @@ const ArtistProfileViewScreen: React.FC<{ route: any; navigation: any }> = ({ ro
 
           {/* Footer Note */}
           <Text style={styles.investFooter}>
-            By registering interest, you help us demonstrate demand for artist investment features to funding partners. No payment required now.
+            Paper trading simulation interest only. No real money, securities, or ownership is offered. Join the waitlist for a future real-money launch.
           </Text>
         </View>
       )}

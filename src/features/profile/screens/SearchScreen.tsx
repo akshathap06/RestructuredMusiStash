@@ -9,7 +9,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
-export default function SearchScreen() {
+export default function SearchScreen(_props?: any) {
   const [searchQuery, setSearchQuery] = useState('');
 
   const handleSearch = () => {

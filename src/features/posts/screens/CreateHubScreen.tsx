@@ -12,6 +12,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '../../../contexts/AuthContext';
 import { supabase } from '../../../lib/supabase';
+import { featureFlags } from '../../../config/featureFlags';
 
 interface UserProfiles {
   hasArtistProfile: boolean;
@@ -67,6 +68,40 @@ export default function CreateHubScreen({ navigation }: { navigation: any }) {
 
   const handleCreatePost = () => {
     navigation.navigate('CreatePost');
+  };
+
+  const handleCreatePaperProject = () => {
+    if (!profiles.hasArtistProfile || !profiles.artistProfileData) {
+      Alert.alert(
+        'Artist profile required',
+        'Create an artist profile first to publish a paper project.',
+        [
+          { text: 'Cancel', style: 'cancel' },
+          { text: 'Become an Artist', onPress: () => navigation.navigate('CreateArtist') },
+        ],
+      );
+      return;
+    }
+    navigation.navigate('CreateArtistProject', {
+      artistId: profiles.artistProfileData.id,
+      artistName: profiles.artistProfileData.artist_name,
+      artistVerified: !!profiles.artistProfileData.is_verified,
+      artworkUrl:
+        profiles.artistProfileData.profile_photo_url ||
+        profiles.artistProfileData.banner_photo_url,
+    });
+  };
+
+  const handleViewMyArtistProfile = () => {
+    if (!profiles.artistProfileData?.id) {
+      navigation.navigate('CreateArtist');
+      return;
+    }
+    navigation.navigate('ArtistExperience', {
+      artistId: profiles.artistProfileData.id,
+      userId: user?.id,
+      artistData: profiles.artistProfileData,
+    });
   };
 
   const handleCreateServiceListing = () => {
@@ -135,7 +170,51 @@ export default function CreateHubScreen({ navigation }: { navigation: any }) {
             <Ionicons name="chevron-forward" size={20} color="#4B5563" />
           </TouchableOpacity>
 
-          {/* List a Service */}
+          {/* Paper project */}
+          <TouchableOpacity
+            style={[styles.optionCard, !profiles.hasArtistProfile && styles.optionCardDim]}
+            onPress={handleCreatePaperProject}
+            activeOpacity={0.7}
+          >
+            <View style={[styles.iconBox, { backgroundColor: '#8B5CF615' }]}>
+              <Ionicons
+                name="rocket-outline"
+                size={22}
+                color={profiles.hasArtistProfile ? '#8B5CF6' : '#6B7280'}
+              />
+            </View>
+            <View style={styles.optionContent}>
+              <Text style={[styles.optionTitle, !profiles.hasArtistProfile && styles.optionTitleDim]}>
+                Paper project
+              </Text>
+              <Text style={styles.optionDesc}>
+                {profiles.hasArtistProfile
+                  ? 'Publish a simulated backing campaign'
+                  : 'Requires artist profile'}
+              </Text>
+            </View>
+            <Ionicons name="chevron-forward" size={20} color="#4B5563" />
+          </TouchableOpacity>
+
+          {profiles.hasArtistProfile && (
+            <TouchableOpacity
+              style={styles.optionCard}
+              onPress={handleViewMyArtistProfile}
+              activeOpacity={0.7}
+            >
+              <View style={[styles.iconBox, { backgroundColor: '#8B5CF615' }]}>
+                <Ionicons name="person-outline" size={22} color="#8B5CF6" />
+              </View>
+              <View style={styles.optionContent}>
+                <Text style={styles.optionTitle}>My public artist page</Text>
+                <Text style={styles.optionDesc}>Preview the new profile template</Text>
+              </View>
+              <Ionicons name="chevron-forward" size={20} color="#4B5563" />
+            </TouchableOpacity>
+          )}
+
+          {/* List a Service — marketplace gated */}
+          {featureFlags.MARKETPLACE_ENABLED && (
           <TouchableOpacity 
             style={[styles.optionCard, !profiles.hasServiceProvider && styles.optionCardDim]}
             onPress={handleCreateServiceListing}
@@ -164,6 +243,7 @@ export default function CreateHubScreen({ navigation }: { navigation: any }) {
               </View>
             )}
           </TouchableOpacity>
+          )}
         </View>
 
         {/* Divider */}
@@ -201,7 +281,8 @@ export default function CreateHubScreen({ navigation }: { navigation: any }) {
             )}
           </TouchableOpacity>
 
-          {/* Service Provider */}
+          {/* Service Provider — marketplace gated */}
+          {featureFlags.MARKETPLACE_ENABLED && (
           <TouchableOpacity 
             style={styles.setupCard}
             onPress={handleCreateServiceProvider}
@@ -226,6 +307,7 @@ export default function CreateHubScreen({ navigation }: { navigation: any }) {
               </View>
             )}
           </TouchableOpacity>
+          )}
         </View>
 
         {/* Status Footer */}

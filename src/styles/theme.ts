@@ -1,11 +1,27 @@
+// V2 Design Direction A — premium dark violet
 // MusiStash Brand Theme Configuration - Adapted from Figma Design
 export const MusiStashTheme = {
   colors: {
+    // Experience screens (artist profile / project detail)
+    background: '#080A0D',
+    surface: '#101318',
+    surfaceElevated: '#151920',
+    borderSubtle: 'rgba(255,255,255,0.10)',
+    borderStrong: 'rgba(255,255,255,0.16)',
+    textPrimary: '#F5F3EF',
+    textSecondary: '#AAA8AE',
+    textMuted: '#73717A',
+    accentPressed: '#7847E8',
+    accentSoft: 'rgba(139,92,246,0.15)',
+    positive: '#62D892',
+    overlay: 'rgba(0,0,0,0.44)',
+    divider: 'rgba(255,255,255,0.08)',
+    progressTrack: 'rgba(255,255,255,0.12)',
+
     // Core brand colors - From Figma Dark Theme
-    background: '#000000',     // Pure black background (--background in dark mode)
     foreground: '#FCFCFD',     // oklch(.985 0 0) - Almost white text
-    card: '#000000',           // Black cards (--card in dark mode)
-    cardForeground: '#FCFCFD', // White text on cards
+    card: '#101318',           // surface
+    cardForeground: '#F5F3EF',
     
     // Primary colors
     primary: '#FCFCFD',        // White primary (oklch(.985 0 0))
@@ -19,10 +35,10 @@ export const MusiStashTheme = {
     muted: '#454648',          // oklch(.269 0 0)
     mutedForeground: '#B5B5BA', // oklch(.708 0 0) - Medium gray
     
-    // Accent colors (MusiStash Blue)
-    accent: '#3B82F6',         // Blue-500 for primary actions
-    accentLight: '#60A5FA',    // Blue-400 for highlights
-    accentDark: '#2563EB',     // Blue-600 for hover states
+    // Accent colors (MusiStash Violet)
+    accent: '#8B5CF6',         // Violet-500 for primary actions
+    accentLight: '#A78BFA',    // Violet-400 for highlights
+    accentDark: '#7C3AED',     // Violet-600 for hover states
     accentForeground: '#FCFCFD', // White text on accent
     
     // Success/Payment color (Green - only for payment-related UI)
@@ -42,10 +58,13 @@ export const MusiStashTheme = {
     // Ring/Focus colors
     ring: '#71717A',           // oklch(.439 0 0) - Focus ring
     
-    // Gradients (MusiStash brand colors)
-    gradientBlue: '#3B82F6',   // Blue-500 (primary)
-    gradientBlueLight: '#60A5FA', // Blue-400
-    gradientBlueDark: '#2563EB',  // Blue-600
+    // Gradients (keys retained; values are violet brand equivalents)
+    gradientBlue: '#8B5CF6',      // Violet-500 (primary brand)
+    gradientBlueLight: '#A78BFA', // Violet-400
+    gradientBlueDark: '#7C3AED',  // Violet-600
+    gradientViolet: '#8B5CF6',
+    gradientVioletLight: '#A78BFA',
+    gradientVioletDark: '#7C3AED',
     
     // Grays from Figma palette
     gray100: '#F7F7F8',        // Very light gray
@@ -58,26 +77,26 @@ export const MusiStashTheme = {
     gray800: '#474750',        // Almost black
     gray900: '#353638',        // Near black
     
-    // Chart colors (MusiStash brand)
-    chart1: '#3B82F6',         // Blue-500
-    chart2: '#60A5FA',         // Blue-400
-    chart3: '#2563EB',         // Blue-600
-    chart4: '#93C5FD',         // Blue-300
-    chart5: '#1D4ED8',         // Blue-700
+    // Chart colors (violet scale)
+    chart1: '#8B5CF6',         // Violet-500
+    chart2: '#A78BFA',         // Violet-400
+    chart3: '#7C3AED',         // Violet-600
+    chart4: '#C4B5FD',         // Violet-300
+    chart5: '#6D28D9',         // Violet-700
     
     // Special UI colors
     white: '#FFFFFF',
     black: '#000000',
     transparent: 'transparent',
     
-    // MusiStash brand blue (primary accent)
-    blue500: '#3B82F6',
-    blue400: '#60A5FA',
-    blue600: '#2563EB',
+    // MusiStash brand blue keys (kept for compat; values map to violet)
+    blue500: '#8B5CF6',
+    blue400: '#A78BFA',
+    blue600: '#7C3AED',
     
-    // Legacy aliases (now point to blue)
-    purple500: '#3B82F6',  // Now using MusiStash blue
-    purple400: '#60A5FA',  // Now using MusiStash blue light
+    // Brand violet aliases
+    purple500: '#8B5CF6',
+    purple400: '#A78BFA',
   },
   
   // Typography scale - From Figma Design System (index.css)
@@ -229,9 +248,9 @@ export const MusiStashTheme = {
         borderRadius: 14,
       },
       accent: {
-        // Uses gradient in Figma: from-blue-500 to-cyan-500
-        backgroundColor: '#3B82F6',  // Blue-500 (gradient start)
-        gradientColors: ['#3B82F6', '#06B6D4'], // blue-500 to cyan-500
+        // Violet brand gradient
+        backgroundColor: '#8B5CF6',  // Violet-500 (gradient start)
+        gradientColors: ['#8B5CF6', '#7C3AED'], // violet-500 to violet-600
         borderColor: 'transparent',
         textColor: '#FFFFFF',
         height: 56,
@@ -248,7 +267,7 @@ export const MusiStashTheme = {
     
     // Card styles
     card: {
-      backgroundColor: '#000000',    // Pure black cards in Figma
+      backgroundColor: '#121216',    // Elevated dark card
       borderColor: '#454648',        // Muted border
       borderRadius: 10,              // rounded-lg
       shadowColor: '#000',
@@ -261,9 +280,9 @@ export const MusiStashTheme = {
     // Input styles (MusiStash brand)
     input: {
       backgroundColor: 'transparent', // Transparent in Figma
-      borderColor: '#3B82F6',         // Blue border when active
+      borderColor: '#8B5CF6',         // Violet border when active
       borderColorIdle: '#6B7280',     // Gray border when idle
-      borderColorFocus: '#60A5FA',    // Brighter blue on focus
+      borderColorFocus: '#A78BFA',    // Brighter violet on focus
       borderWidth: 2,                 // border-2 in Figma
       textColor: '#FFFFFF',
       placeholderColor: '#6B7280',    // gray-500
@@ -274,7 +293,7 @@ export const MusiStashTheme = {
     
     // Navigation styles
     navigation: {
-      backgroundColor: '#000000',
+      backgroundColor: '#070709',
       borderColor: '#454648',         // Muted border
       activeColor: '#FCFCFD',         // White for active
       inactiveColor: '#6B7280',       // Gray for inactive
@@ -284,8 +303,8 @@ export const MusiStashTheme = {
     // Progress bar (MusiStash brand)
     progress: {
       backgroundColor: '#454648',     // gray-800
-      fillColor: '#3B82F6',           // Blue gradient
-      gradientColors: ['#60A5FA', '#3B82F6'], // blue-400 to blue-500
+      fillColor: '#8B5CF6',           // Violet fill
+      gradientColors: ['#A78BFA', '#8B5CF6'], // violet-400 to violet-500
       height: 4,                      // h-1
     },
     
@@ -293,7 +312,7 @@ export const MusiStashTheme = {
     inputOTP: {
       slotWidth: 64,                  // w-16
       slotHeight: 64,                 // h-16
-      borderColor: '#3B82F6',         // Blue for first input
+      borderColor: '#8B5CF6',         // Violet for first input
       borderColorInactive: '#6B7280', // Gray for others
       borderWidth: 2,
       borderRadius: 14,               // rounded-xl
@@ -303,39 +322,41 @@ export const MusiStashTheme = {
   },
 };
 
-// Gradient definitions for use with LinearGradient - MusiStash Brand
+// Gradient definitions for use with LinearGradient - MusiStash Brand (violet)
 export const MusiStashGradients = {
-  // Landing page gradient (MusiStash blue)
-  landing: ['#3B82F6', '#2563EB', '#60A5FA'] as const, // blue-500 via blue-600 to blue-400
+  // Landing page gradient (MusiStash violet)
+  landing: ['#8B5CF6', '#7C3AED', '#A78BFA'] as const,
   
-  // Progress bar gradient (blue-500 → blue-400)
-  progress: ['#3B82F6', '#60A5FA'] as const, // from-blue-500 to-blue-400
+  // Progress bar gradient (violet-500 → violet-400)
+  progress: ['#8B5CF6', '#A78BFA'] as const,
   
   // Button gradients (MusiStash brand)
-  buttonPrimary: ['#3B82F6', '#2563EB'] as const, // from-blue-500 to-blue-600 (primary action buttons)
-  buttonArtist: ['#3B82F6', '#60A5FA'] as const, // from-blue-500 to-blue-400 (artist tab/buttons)
-  buttonService: ['#3B82F6', '#2563EB'] as const, // from-blue-500 to-blue-600 (service tab/buttons)
+  buttonPrimary: ['#8B5CF6', '#7C3AED'] as const,
+  buttonArtist: ['#8B5CF6', '#A78BFA'] as const,
+  buttonService: ['#8B5CF6', '#7C3AED'] as const,
   
-  // Accent gradient (blue for active states)
-  accent: ['#60A5FA', '#3B82F6'] as const, // from-blue-400 to-blue-500
+  // Accent gradient (violet for active states)
+  accent: ['#A78BFA', '#8B5CF6'] as const,
   
   // Payment gradient (green - only for payment-related UI)
   payment: ['#34D399', '#10B981'] as const, // from-emerald-400 to-emerald-500
   
   // Profile gradient border
-  profileBorder: ['#3B82F6', '#60A5FA', '#3B82F6'] as const, // blue → light blue → blue
+  profileBorder: ['#8B5CF6', '#A78BFA', '#8B5CF6'] as const,
   
   // Dark background gradients
-  dark: ['#000000', '#000000'] as const,
-  darkSubtle: ['#000000', '#1F2937'] as const,
+  dark: ['#070709', '#070709'] as const,
+  darkSubtle: ['#070709', '#121216'] as const,
   
   // Overlay gradients
   overlay: ['rgba(0,0,0,0)', 'rgba(0,0,0,0.8)'] as const,
   overlayStrong: ['rgba(0,0,0,0)', 'rgba(0,0,0,0.95)'] as const,
   
-  // Blue gradients for various use cases
-  blue: ['#3B82F6', '#60A5FA'] as const,   // blue-500 to blue-400
-  blueDark: ['#2563EB', '#3B82F6'] as const, // blue-600 to blue-500
+  // Brand gradients (keys retained for compat; values are violet)
+  blue: ['#8B5CF6', '#A78BFA'] as const,
+  blueDark: ['#7C3AED', '#8B5CF6'] as const,
+  violet: ['#8B5CF6', '#A78BFA'] as const,
+  violetDark: ['#7C3AED', '#8B5CF6'] as const,
 };
 
 // Helper function to create consistent styles - Updated for Figma Design

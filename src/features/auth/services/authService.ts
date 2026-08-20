@@ -1,3 +1,4 @@
+import { Platform } from 'react-native';
 import { supabase, User } from '../../../lib/supabase';
 import * as WebBrowser from 'expo-web-browser';
 import * as AuthSession from 'expo-auth-session';
@@ -586,7 +587,48 @@ class AuthService {
     }
   }
 
-
+  async signInWithApple(): Promise<LoginResponse> {
+    try {
+      if (Platform.OS !== 'ios') {
+        return { success: false, message: 'Apple Sign-In is only available on iOS' };
+      }
+      const AppleAuthentication = await import('expo-apple-authentication');
+      const credential = await AppleAuthentication.signInAsync({
+        requestedScopes: [
+          AppleAuthentication.AppleAuthenticationScope.FULL_NAME,
+          AppleAuthentication.AppleAuthenticationScope.EMAIL,
+        ],
+      });
+      if (!credential.identityToken) {
+        return { success: false, message: 'No identity token from Apple' };
+      }
+      const { data, error } = await supabase.auth.signInWithIdToken({
+        provider: 'apple',
+        token: credential.identityToken,
+      });
+      if (error || !data.user) {
+        return { success: false, message: error?.message || 'Apple Sign-In failed' };
+      }
+      const token = data.session?.access_token || '';
+      this.setToken(token);
+      const { data: userData } = await supabase.from('users').select('*').eq('id', data.user.id).single();
+      return {
+        success: true,
+        user: userData || {
+          id: data.user.id,
+          name: data.user.user_metadata?.full_name || data.user.email?.split('@')[0] || 'User',
+          email: data.user.email || '',
+          role: 'listener',
+        },
+        token,
+      };
+    } catch (e: any) {
+      if (e?.code === 'ERR_REQUEST_CANCELED') {
+        return { success: false, message: 'Sign-in canceled' };
+      }
+      return { success: false, message: e?.message || 'Apple Sign-In failed' };
+    }
+  }
 }
 
 export const authService = new AuthService();

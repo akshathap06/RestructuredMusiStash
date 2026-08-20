@@ -120,14 +120,26 @@ const CampaignDetailScreen: React.FC = () => {
         ))}
       </View>
 
-      {/* Invest Button */}
+      <Text style={styles.paperNote}>
+        Paper trading simulation only. No real money, securities, ownership, or financial returns are being offered.
+      </Text>
+
+      {/* Paper trade CTA (replaces legacy SharePurchase when paper trading is on) */}
       {campaign.status === 'live' && sharesAvailable > 0 && (
         <TouchableOpacity
           style={styles.investButton}
-          onPress={() => navigation.navigate('SharePurchase', { campaignId: campaign.id })}
+          onPress={() =>
+            navigation.navigate('PaperTrade', {
+              projectId: campaign.id,
+              projectTitle: campaign.title,
+              artistName: campaign.title,
+              fundingGoal: campaign.funding_goal,
+            })
+          }
           activeOpacity={0.8}
+          accessibilityLabel="Simulate paper backing"
         >
-          <Text style={styles.investButtonText}>Invest Now</Text>
+          <Text style={styles.investButtonText}>Simulate Backing</Text>
         </TouchableOpacity>
       )}
     </ScrollView>
@@ -165,10 +177,11 @@ const styles = StyleSheet.create({
   riskBullet: { color: '#f87171', fontWeight: '700', fontSize: 14, marginTop: 1 },
   riskText: { flex: 1, fontSize: 13, color: '#9ca3af', lineHeight: 18 },
   investButton: {
-    margin: 20, backgroundColor: '#22c55e', borderRadius: 14,
+    margin: 20, backgroundColor: '#8B5CF6', borderRadius: 14,
     paddingVertical: 16, alignItems: 'center',
   },
   investButtonText: { color: '#fff', fontSize: 18, fontWeight: '700' },
+  paperNote: { marginHorizontal: 20, marginTop: 8, fontSize: 12, color: '#9ca3af', lineHeight: 18 },
 });
 
 export default CampaignDetailScreen;

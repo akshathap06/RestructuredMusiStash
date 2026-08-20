@@ -36,9 +36,11 @@ import { ProductionProfileService } from './src/features/profile/services/produc
 // --- Artists Feature ---
 import BrowseArtistsScreen from './src/features/artists/screens/BrowseArtistsScreen';
 import ArtistProfileScreen from './src/features/artists/screens/ArtistProfileScreen';
-import ArtistProfileViewScreen from './src/features/artists/screens/ArtistProfileViewScreen';
+import ArtistExperienceScreen from './src/features/artists/screens/ArtistExperienceScreen';
 import CreateArtistScreen from './src/features/artists/screens/CreateArtistScreen';
+import CreateArtistProjectScreen from './src/features/artists/screens/CreateArtistProjectScreen';
 import { ApprovedArtistsService } from './src/features/artists/services/approvedArtistsService';
+// ArtistProfileViewScreen retained in repo; public route uses ArtistExperienceScreen
 
 // --- Service Providers Feature ---
 import ServiceProviderScreen from './src/features/service-providers/screens/ServiceProviderScreen';
@@ -104,11 +106,19 @@ import { FileTransferPortalScreen } from './src/features/files/screens/FileTrans
 // --- AI Feature ---
 import AgenticManagerScreen from './src/features/ai/screens/AgenticManagerScreen';
 
-// --- Investment Feature ---
+// --- Investment Feature (legacy; gated) ---
 import CampaignBrowseScreen from './src/features/investments/screens/CampaignBrowseScreen';
 import CampaignDetailScreen from './src/features/investments/screens/CampaignDetailScreen';
 import SharePurchaseScreen from './src/features/investments/screens/SharePurchaseScreen';
 import InvestorDashboardScreen from './src/features/investments/screens/InvestorDashboardScreen';
+
+// --- V2 Paper Trading / Explore / Waitlist ---
+import PortfolioScreen from './src/features/paper-trading/screens/PortfolioScreen';
+import PaperTradeScreen from './src/features/paper-trading/screens/PaperTradeScreen';
+import ProjectDetailScreen from './src/features/paper-trading/screens/ProjectDetailScreen';
+import ExploreScreen from './src/features/explore/screens/ExploreScreen';
+import WaitlistScreen from './src/features/waitlist/screens/WaitlistScreen';
+import { featureFlags } from './src/config/featureFlags';
 
 // --- Shared Components ---
 import ErrorBoundary from './src/shared/components/ErrorBoundary';
@@ -205,22 +215,36 @@ const Stack = createStackNavigator();
 const Tab = createBottomTabNavigator();
 const ProfileStack = createStackNavigator();
 
-// Menu item configurations with gradients
+// Menu item configurations — V2 paper product (marketplace items gated)
 const MAIN_MENU_ITEMS = [
-  { icon: 'flash', label: 'Agentic Manager', route: 'AgenticManager', colors: ['#3B82F6', '#2563EB', '#1D4ED8'] },
-  { icon: 'person', label: 'Profile', route: 'Profile', colors: ['#3B82F6', '#2563EB', '#60A5FA'] },
-  { icon: 'add-circle', label: 'Create Post', route: 'Create', colors: ['#3B82F6', '#06B6D4', '#14B8A6'] },
-  { icon: 'document-text', label: 'My Requests', route: 'ProjectRequests', colors: ['#3B82F6', '#2563EB', '#1D4ED8'] },
-  { icon: 'cube', label: 'My Orders', route: 'MyOrders', colors: ['#3B82F6', '#60A5FA', '#2563EB'] },
+  ...(featureFlags.AGENTIC_MANAGER_ENABLED
+    ? [{ icon: 'flash', label: 'Agentic Manager', route: 'AgenticManager', colors: ['#8B5CF6', '#7C3AED', '#6D28D9'] }]
+    : []),
+  { icon: 'wallet', label: 'Portfolio', route: 'Portfolio', colors: ['#8B5CF6', '#7C3AED', '#A78BFA'] },
+  { icon: 'compass', label: 'Explore', route: 'Explore', colors: ['#8B5CF6', '#7C3AED', '#A78BFA'] },
+  { icon: 'person', label: 'Profile', route: 'Profile', colors: ['#8B5CF6', '#7C3AED', '#A78BFA'] },
+  { icon: 'add-circle', label: 'Create', route: 'Create', colors: ['#8B5CF6', '#06B6D4', '#14B8A6'] },
+  ...(featureFlags.WAITLIST_ENABLED
+    ? [{ icon: 'mail', label: 'Join Waitlist', route: 'Waitlist', colors: ['#8B5CF6', '#A78BFA', '#7C3AED'] }]
+    : []),
+  ...(featureFlags.MARKETPLACE_ENABLED
+    ? [
+        { icon: 'document-text', label: 'My Requests', route: 'ProjectRequests', colors: ['#8B5CF6', '#7C3AED', '#6D28D9'] },
+        { icon: 'cube', label: 'My Orders', route: 'MyOrders', colors: ['#8B5CF6', '#A78BFA', '#7C3AED'] },
+      ]
+    : []),
 ];
 
 const BECOME_MENU_ITEMS = [
   { icon: 'person-add', label: 'Become an Artist', route: 'CreateArtist', colors: ['#10B981', '#22C55E', '#14B8A6'] },
-  { icon: 'briefcase', label: 'Become Service Provider', route: 'CreateServiceProvider', colors: ['#06B6D4', '#0EA5E9', '#3B82F6'] },
+  ...(featureFlags.MARKETPLACE_ENABLED
+    ? [{ icon: 'briefcase', label: 'Become Service Provider', route: 'CreateServiceProvider', colors: ['#06B6D4', '#0EA5E9', '#8B5CF6'] }]
+    : []),
 ];
 
 const BROWSE_MENU_ITEMS = [
-  { icon: 'people', label: 'Browse Artists', route: 'BrowseArtists', colors: ['#6366F1', '#3B82F6', '#06B6D4'] },
+  { icon: 'people', label: 'Browse Artists', route: 'BrowseArtists', colors: ['#8B5CF6', '#7C3AED', '#A78BFA'] },
+  { icon: 'star', label: 'Kaleb (Demo Profile)', route: 'ArtistExperience', colors: ['#8B5CF6', '#A78BFA', '#7C3AED'] },
 ];
 
 const BOTTOM_MENU_ITEMS = [
@@ -297,33 +321,43 @@ function UniversalHeader({ navigation, title, subtitle }: { navigation: any, tit
         case 'Profile':
           navigation.navigate('MainTabs', { screen: 'Profile' });
           break;
+        case 'Portfolio':
+          navigation.navigate('MainTabs', { screen: 'Portfolio' });
+          break;
+        case 'Explore':
+          navigation.navigate('MainTabs', { screen: 'Explore' });
+          break;
         case 'Create':
           navigation.navigate('MainTabs', { screen: 'Create' });
           break;
         case 'BrowseArtists':
-          navigation.navigate('MainTabs', { screen: 'Investment' });
+          navigation.navigate('BrowseArtists');
+          break;
+        case 'ArtistExperience':
+          navigation.navigate('ArtistExperience', { artistId: 'artist_kaleb' });
+          break;
+        case 'Waitlist':
+          navigation.navigate('Waitlist');
           break;
         case 'AgenticManager':
-          navigation.navigate('AgenticManager');
+          if (featureFlags.AGENTIC_MANAGER_ENABLED) navigation.navigate('AgenticManager');
           break;
         case 'CreateServiceProvider':
-          navigation.navigate('CreateServiceProvider');
+          if (featureFlags.MARKETPLACE_ENABLED) navigation.navigate('CreateServiceProvider');
           break;
         case 'CreateArtist':
           navigation.navigate('CreateArtist');
           break;
         case 'ProjectRequests':
-          navigation.navigate('ProjectRequests');
+          if (featureFlags.MARKETPLACE_ENABLED) navigation.navigate('ProjectRequests');
           break;
         case 'MyOrders':
-          navigation.navigate('MyOrders');
+          if (featureFlags.MARKETPLACE_ENABLED) navigation.navigate('MyOrders');
           break;
         case 'Notifications':
-          // Navigate directly to Notifications in MainStack
           navigation.navigate('Notifications');
           break;
         case 'Settings':
-          // Navigate to dedicated Settings screen
           navigation.navigate('Settings');
           break;
         default:
@@ -770,16 +804,17 @@ function MainTabs({ navigation: parentNavigation }: { navigation: any }) {
   
   return (
     <Tab.Navigator
+      initialRouteName="Explore"
       screenOptions={({ route }) => ({
         tabBarIcon: ({ focused, color, size }) => {
           let iconName: keyof typeof Ionicons.glyphMap = 'home';
 
-          if (route.name === 'Posts') {
-            iconName = focused ? 'document-text' : 'document-text-outline';
+          if (route.name === 'Explore') {
+            iconName = focused ? 'compass' : 'compass-outline';
           } else if (route.name === 'Profile') {
             iconName = focused ? 'person' : 'person-outline';
-          } else if (route.name === 'Investment') {
-            iconName = focused ? 'trending-up' : 'trending-up-outline';
+          } else if (route.name === 'Portfolio') {
+            iconName = focused ? 'wallet' : 'wallet-outline';
           } else if (route.name === 'Create') {
             iconName = focused ? 'add-circle' : 'add-circle-outline';
           }
@@ -807,42 +842,42 @@ function MainTabs({ navigation: parentNavigation }: { navigation: any }) {
         unmountOnBlur: false, // Keep screens mounted when switching tabs
       })}
     >
-      <Tab.Screen 
-        name="Profile" 
-        component={ProfileStackNavigator}
-        options={({ navigation }) => ({ 
+      <Tab.Screen
+        name="Portfolio"
+        component={PortfolioScreen}
+        options={({ navigation }) => ({
           header: () => (
-            <UniversalHeader navigation={navigation} title="MusiStash" subtitle="" />
+            <UniversalHeader navigation={navigation} title="Portfolio" subtitle="Paper trading" />
           ),
         })}
       />
-      <Tab.Screen 
-        name="Investment" 
-        component={CampaignBrowseScreen}
-        options={({ navigation }) => ({ 
+      <Tab.Screen
+        name="Explore"
+        component={ExploreScreen}
+        options={({ navigation }) => ({
           header: () => (
-            <UniversalHeader navigation={navigation} title="MusiStash" subtitle="" />
-          ),
-        })}
-      />
-      <Tab.Screen 
-        name="Create" 
-        component={CreateHubScreen}
-        options={({ navigation }) => ({ 
-          header: () => (
-            <UniversalHeader navigation={navigation} title="MusiStash" subtitle="" />
-          ),
-        })}
-      />
-      <Tab.Screen 
-        name="Posts" 
-        component={PostsScreen}
-        options={({ navigation }) => ({ 
-          header: () => (
-            <UniversalHeader navigation={navigation} title="MusiStash" subtitle="" />
+            <UniversalHeader navigation={navigation} title="Explore" subtitle="" />
           ),
         })}
         initialParams={{ parentNavigation }}
+      />
+      <Tab.Screen
+        name="Create"
+        component={CreateHubScreen}
+        options={({ navigation }) => ({
+          header: () => (
+            <UniversalHeader navigation={navigation} title="Create" subtitle="" />
+          ),
+        })}
+      />
+      <Tab.Screen
+        name="Profile"
+        component={ProfileStackNavigator}
+        options={({ navigation }) => ({
+          header: () => (
+            <UniversalHeader navigation={navigation} title="Profile" subtitle="" />
+          ),
+        })}
       />
     </Tab.Navigator>
   );
@@ -865,33 +900,43 @@ function MainStack() {
       />
       <Stack.Screen
         name="ArtistProfileView"
-        component={ArtistProfileViewScreen}
+        component={ArtistExperienceScreen}
         options={{ headerShown: false }}
       />
       <Stack.Screen
-        name="Messages"
-        component={MessagesScreen}
+        name="ArtistExperience"
+        component={ArtistExperienceScreen}
         options={{ headerShown: false }}
       />
       <Stack.Screen
-        name="NewMessage"
-        component={NewMessageScreen}
+        name="BrowseArtists"
+        component={BrowseArtistsScreen}
         options={{ headerShown: false }}
       />
       <Stack.Screen
-        name="Chat"
-        component={ChatScreen}
+        name="PaperTrade"
+        component={PaperTradeScreen}
+        options={{
+          headerShown: true,
+          title: 'Paper trade',
+          headerStyle: { backgroundColor: '#070709' },
+          headerTintColor: '#FFFFFF',
+        }}
+      />
+      <Stack.Screen
+        name="ProjectDetail"
+        component={ProjectDetailScreen}
         options={{ headerShown: false }}
       />
       <Stack.Screen
-        name="ServiceProvider"
-        component={ServiceProviderScreen}
-        options={{ headerShown: false }}
-      />
-      <Stack.Screen
-        name="ServiceProviderDetail"
-        component={ServiceProviderDetailScreen}
-        options={{ headerShown: false }}
+        name="Waitlist"
+        component={WaitlistScreen}
+        options={{
+          headerShown: true,
+          title: 'Launch waitlist',
+          headerStyle: { backgroundColor: '#070709' },
+          headerTintColor: '#FFFFFF',
+        }}
       />
       <Stack.Screen
         name="PostDetail"
@@ -899,69 +944,18 @@ function MainStack() {
         options={{ headerShown: false }}
       />
       <Stack.Screen
-        name="CreateServiceProvider"
-        component={CreateServiceProviderScreen}
-        options={{ headerShown: false }}
-      />
-      <Stack.Screen
         name="CreateArtist"
         component={CreateArtistScreen}
         options={{ headerShown: false }}
       />
-      {/* ServiceProviderProfile removed - using ServiceProviderDetail instead for consistency */}
       <Stack.Screen
-        name="ContactServiceProvider"
-        component={ContactServiceProviderScreen}
+        name="CreateArtistProject"
+        component={CreateArtistProjectScreen}
         options={{ headerShown: false }}
       />
       <Stack.Screen
-        name="ProjectRequests"
-        component={ProjectRequestsScreen}
-        options={{ headerShown: false }}
-      />
-      <Stack.Screen
-        name="ServiceProviderRequests"
-        component={ServiceProviderRequestsScreen}
-        options={{ headerShown: false }}
-      />
-      <Stack.Screen
-        name="ServiceProviderDashboard"
-        component={ServiceProviderDashboardScreen}
-        options={{ headerShown: false }}
-      />
-      <Stack.Screen
-        name="ManageServices"
-        component={ManageServicesScreen}
-        options={{
-          headerShown: true,
-          title: 'Manage Services',
-          headerStyle: { backgroundColor: '#000000' },
-          headerTintColor: '#FFFFFF',
-        }}
-      />
-      <Stack.Screen
-        name="ManagePortfolio"
-        component={ManagePortfolioScreen}
-        options={{
-          headerShown: true,
-          title: 'Portfolio',
-          headerStyle: { backgroundColor: '#000000' },
-          headerTintColor: '#FFFFFF',
-        }}
-      />
-      <Stack.Screen
-        name="ProviderEarnings"
-        component={ProviderEarningsScreen}
-        options={{ headerShown: false }}
-      />
-      <Stack.Screen
-        name="SimpleEarnings"
-        component={SimpleEarningsScreen}
-        options={{ headerShown: false }}
-      />
-      <Stack.Screen
-        name="ProjectRequestDetails"
-        component={ProjectRequestDetailsScreen}
+        name="CreatePost"
+        component={CreatePostScreen}
         options={{ headerShown: false }}
       />
       <Stack.Screen
@@ -1014,138 +1008,60 @@ function MainStack() {
         component={TermsOfServiceScreen}
         options={{ headerShown: false }}
       />
-      <Stack.Screen
-        name="PaymentScreen"
-        component={PaymentScreen}
-        options={{ headerShown: false }}
-      />
-      <Stack.Screen
-        name="Delivery"
-        component={DeliveryScreen}
-        options={{ headerShown: false }}
-      />
-      <Stack.Screen
-        name="AgenticManager"
-        component={AgenticManagerScreen}
-        options={{ headerShown: false }}
-      />
-      <Stack.Screen
-        name="CreatePost"
-        component={CreatePostScreen}
-        options={{ headerShown: false }}
-      />
-      <Stack.Screen
-        name="MyOrders"
-        component={MyOrdersScreen}
-        options={{ headerShown: false }}
-      />
-      <Stack.Screen
-        name="WorkSubmissionScreen"
-        component={WorkSubmissionScreen}
-        options={{ headerShown: false }}
-      />
-      <Stack.Screen
-        name="FileTransferPortalScreen"
-        component={FileTransferPortalScreen}
-        options={{ headerShown: false }}
-      />
-      <Stack.Screen
-        name="CampaignBrowse"
-        component={CampaignBrowseScreen}
-        options={{ headerShown: false }}
-      />
-      <Stack.Screen
-        name="CampaignDetail"
-        component={CampaignDetailScreen}
-        options={{ headerShown: false }}
-      />
-      <Stack.Screen
-        name="SharePurchase"
-        component={SharePurchaseScreen}
-        options={{ headerShown: false }}
-      />
-      <Stack.Screen
-        name="InvestorDashboard"
-        component={InvestorDashboardScreen}
-        options={{ headerShown: false }}
-      />
-      <Stack.Screen
-        name="PaymentReceiptScreen"
-        component={PaymentReceiptScreen}
-        options={{ headerShown: false }}
-      />
-      <Stack.Screen
-        name="ProjectSubmission"
-        component={ProjectSubmissionScreen}
-        options={{ 
-          headerShown: true,
-          title: 'Submit Work',
-          headerStyle: { backgroundColor: '#000000' },
-          headerTintColor: '#FFFFFF',
-          headerTitleStyle: { color: '#FFFFFF' }
-        }}
-      />
-      <Stack.Screen
-        name="ClientDelivery"
-        component={ClientDeliveryScreen}
-        options={{ 
-          headerShown: true,
-          title: 'Project Delivery',
-          headerStyle: { backgroundColor: '#000000' },
-          headerTintColor: '#FFFFFF',
-          headerTitleStyle: { color: '#FFFFFF' }
-        }}
-      />
-      <Stack.Screen
-        name="ClientDeliveryList"
-        component={ClientDeliveryListScreen}
-        options={{ 
-          headerShown: true,
-          title: 'My Deliveries',
-          headerStyle: { backgroundColor: '#000000' },
-          headerTintColor: '#FFFFFF',
-          headerTitleStyle: { color: '#FFFFFF' }
-        }}
-      />
-      <Stack.Screen
-        name="RequestRevision"
-        component={RequestRevisionScreen}
-        options={{ 
-          headerShown: true,
-          title: 'Request Revision',
-          headerStyle: { backgroundColor: '#000000' },
-          headerTintColor: '#FFFFFF',
-          headerTitleStyle: { color: '#FFFFFF' }
-        }}
-      />
-      <Stack.Screen
-        name="DeliveryPreview"
-        component={DeliveryPreviewScreen}
-        options={{ 
-          headerShown: false
-        }}
-      />
-      <Stack.Screen
-        name="NewWorkSubmission"
-        component={NewWorkSubmissionScreen as any}
-        options={{ 
-          headerShown: false
-        }}
-      />
-      <Stack.Screen
-        name="SubmitWork"
-        component={SubmitWorkScreen as any}
-        options={{ 
-          headerShown: false
-        }}
-      />
-      <Stack.Screen
-        name="ClientWorkView"
-        component={ClientWorkViewScreen as any}
-        options={{ 
-          headerShown: false
-        }}
-      />
+      {featureFlags.AGENTIC_MANAGER_ENABLED && (
+        <Stack.Screen
+          name="AgenticManager"
+          component={AgenticManagerScreen}
+          options={{ headerShown: false }}
+        />
+      )}
+      {featureFlags.MESSAGING_ENABLED && (
+        <>
+          <Stack.Screen name="Messages" component={MessagesScreen} options={{ headerShown: false }} />
+          <Stack.Screen name="NewMessage" component={NewMessageScreen} options={{ headerShown: false }} />
+          <Stack.Screen name="Chat" component={ChatScreen} options={{ headerShown: false }} />
+        </>
+      )}
+      {featureFlags.MARKETPLACE_ENABLED && (
+        <>
+          <Stack.Screen name="ServiceProvider" component={ServiceProviderScreen} options={{ headerShown: false }} />
+          <Stack.Screen name="ServiceProviderDetail" component={ServiceProviderDetailScreen} options={{ headerShown: false }} />
+          <Stack.Screen name="CreateServiceProvider" component={CreateServiceProviderScreen} options={{ headerShown: false }} />
+          <Stack.Screen name="ContactServiceProvider" component={ContactServiceProviderScreen} options={{ headerShown: false }} />
+          <Stack.Screen name="ProjectRequests" component={ProjectRequestsScreen} options={{ headerShown: false }} />
+          <Stack.Screen name="ServiceProviderRequests" component={ServiceProviderRequestsScreen} options={{ headerShown: false }} />
+          <Stack.Screen name="ServiceProviderDashboard" component={ServiceProviderDashboardScreen} options={{ headerShown: false }} />
+          <Stack.Screen name="ManageServices" component={ManageServicesScreen} options={{ headerShown: true, title: 'Manage Services', headerStyle: { backgroundColor: '#000000' }, headerTintColor: '#FFFFFF' }} />
+          <Stack.Screen name="ManagePortfolio" component={ManagePortfolioScreen} options={{ headerShown: true, title: 'Portfolio', headerStyle: { backgroundColor: '#000000' }, headerTintColor: '#FFFFFF' }} />
+          <Stack.Screen name="ProviderEarnings" component={ProviderEarningsScreen} options={{ headerShown: false }} />
+          <Stack.Screen name="SimpleEarnings" component={SimpleEarningsScreen} options={{ headerShown: false }} />
+          <Stack.Screen name="ProjectRequestDetails" component={ProjectRequestDetailsScreen} options={{ headerShown: false }} />
+          <Stack.Screen name="PaymentScreen" component={PaymentScreen} options={{ headerShown: false }} />
+          <Stack.Screen name="Delivery" component={DeliveryScreen} options={{ headerShown: false }} />
+          <Stack.Screen name="MyOrders" component={MyOrdersScreen} options={{ headerShown: false }} />
+          <Stack.Screen name="WorkSubmissionScreen" component={WorkSubmissionScreen} options={{ headerShown: false }} />
+          <Stack.Screen name="FileTransferPortalScreen" component={FileTransferPortalScreen} options={{ headerShown: false }} />
+          <Stack.Screen name="PaymentReceiptScreen" component={PaymentReceiptScreen} options={{ headerShown: false }} />
+          <Stack.Screen name="ProjectSubmission" component={ProjectSubmissionScreen} options={{ headerShown: true, title: 'Submit Work', headerStyle: { backgroundColor: '#000000' }, headerTintColor: '#FFFFFF' }} />
+          <Stack.Screen name="ClientDelivery" component={ClientDeliveryScreen} options={{ headerShown: true, title: 'Project Delivery', headerStyle: { backgroundColor: '#000000' }, headerTintColor: '#FFFFFF' }} />
+          <Stack.Screen name="ClientDeliveryList" component={ClientDeliveryListScreen} options={{ headerShown: false }} />
+          <Stack.Screen name="DeliveryPreview" component={DeliveryPreviewScreen} options={{ headerShown: false }} />
+          <Stack.Screen name="NewWorkSubmission" component={NewWorkSubmissionScreen} options={{ headerShown: false }} />
+          <Stack.Screen name="SubmitWork" component={SubmitWorkScreen} options={{ headerShown: false }} />
+          <Stack.Screen name="ClientWorkView" component={ClientWorkViewScreen} options={{ headerShown: false }} />
+          <Stack.Screen name="RequestRevision" component={RequestRevisionScreen} options={{ headerShown: false }} />
+        </>
+      )}
+      {(featureFlags.LEGACY_INVESTMENT_UI || featureFlags.PAPER_TRADING_ENABLED) && (
+        <>
+          <Stack.Screen name="CampaignBrowse" component={CampaignBrowseScreen} options={{ headerShown: false }} />
+          <Stack.Screen name="CampaignDetail" component={CampaignDetailScreen} options={{ headerShown: false }} />
+          <Stack.Screen name="InvestorDashboard" component={InvestorDashboardScreen} options={{ headerShown: false }} />
+        </>
+      )}
+      {featureFlags.LEGACY_INVESTMENT_UI && (
+        <Stack.Screen name="SharePurchase" component={SharePurchaseScreen} options={{ headerShown: false }} />
+      )}
     </Stack.Navigator>
   );
 }
@@ -1337,8 +1253,10 @@ function AppContent() {
         // When authenticated
         MainTabs: {
           screens: {
+            Portfolio: 'portfolio',
+            Explore: 'explore',
             Profile: 'profile',
-            Posts: 'posts',
+            Create: 'create',
           }
         },
       },
@@ -1482,7 +1400,7 @@ export default function App() {
         
         // Test database connectivity
         const healthCheck = await ProductionProfileService.healthCheck();
-        console.log('🏥 Database health:', healthCheck.status, healthCheck.details);
+        console.log('🏥 Database health:', healthCheck.ok ? 'ok' : 'fail', healthCheck.message);
         
       } catch (error) {
         console.warn('⚠️ App initialization warning:', error);

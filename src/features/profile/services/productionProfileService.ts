@@ -466,4 +466,14 @@ export class ProductionProfileService {
   static clearMemoryCache(): void {
     this.memoryCache.clear();
   }
+
+  static async healthCheck(): Promise<{ ok: boolean; message?: string }> {
+    try {
+      const { error } = await supabase.from('users').select('id').limit(1);
+      if (error) return { ok: false, message: error.message };
+      return { ok: true };
+    } catch (e: any) {
+      return { ok: false, message: e?.message || 'health check failed' };
+    }
+  }
 }
