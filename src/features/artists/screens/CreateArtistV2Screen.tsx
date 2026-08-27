@@ -17,16 +17,19 @@ import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { useAuth } from '../../auth/AuthContext';
 import { ArtistAccountService, ArtistAccount } from '../services/artistAccountService';
+import { uploadProfileImage } from '../services/imageUploadService';
 
 const colors = {
-  background: '#080A0D',
-  surface: '#101318',
-  borderSubtle: 'rgba(255,255,255,0.10)',
-  borderStrong: 'rgba(255,255,255,0.16)',
-  textPrimary: '#F5F3EF',
-  textSecondary: '#AAA8AE',
-  textMuted: '#73717A',
-  accent: '#8B5CF6',
+  background: '#0A0A0C',
+  surface: '#15151A',
+  borderSubtle: 'rgba(255,255,255,0.08)',
+  borderStrong: 'rgba(255,255,255,0.14)',
+  line: '#26262D',
+  textPrimary: '#F4F4F6',
+  textSecondary: '#C9C6D4',
+  textMuted: '#9B9BA4',
+  accent: '#4B9CD3',
+  onAccent: '#0A0A0C',
 };
 
 const GENRES = [
@@ -101,13 +104,28 @@ export default function CreateArtistV2Screen({ navigation }: { navigation: any }
     setSubmitting(true);
     try {
       const listeners = parseInt(monthlyListeners.replace(/[^0-9]/g, ''), 10);
+
+      // Upload picked images to Storage; write URLs, never local file:// URIs.
+      let avatarUrl: string | undefined;
+      let bannerUrl: string | undefined;
+      try {
+        if (avatarUri) {
+          avatarUrl = await uploadProfileImage(avatarUri, { userId: user.id, kind: 'avatar' });
+        }
+        if (heroUri) {
+          bannerUrl = await uploadProfileImage(heroUri, { userId: user.id, kind: 'banner' });
+        }
+      } catch (e) {
+        console.warn('Artist photo upload failed, continuing without images', e);
+      }
+
       const result = await ArtistAccountService.createArtistAccount({
         user_id: user.id,
         artist_name: artistName.trim(),
         bio: bio.trim() || undefined,
         genre: genres,
-        profile_photo: avatarUri ?? undefined,
-        banner_photo: heroUri ?? undefined,
+        profile_photo: avatarUrl,
+        banner_photo: bannerUrl,
         location: location.trim() || undefined,
         monthly_listeners: Number.isNaN(listeners) ? undefined : listeners,
       });
@@ -345,7 +363,7 @@ export default function CreateArtistV2Screen({ navigation }: { navigation: any }
               onPress={handleSubmit}
             >
               {submitting ? (
-                <ActivityIndicator color={colors.textPrimary} />
+                <ActivityIndicator color={colors.onAccent} />
               ) : (
                 <Text style={styles.primaryButtonText}>Create artist profile</Text>
               )}
@@ -401,9 +419,9 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.borderSubtle,
   },
-  chipSelected: { borderColor: colors.accent, backgroundColor: 'rgba(139,92,246,0.15)' },
+  chipSelected: { borderColor: colors.accent, backgroundColor: colors.accent },
   chipText: { color: colors.textSecondary, fontSize: 14 },
-  chipTextSelected: { color: colors.textPrimary, fontWeight: '600' },
+  chipTextSelected: { color: colors.onAccent, fontFamily: "Manrope_700Bold", fontWeight: "700" },
   heroPicker: {
     aspectRatio: 16 / 9,
     borderRadius: 12,
@@ -452,7 +470,7 @@ const styles = StyleSheet.create({
     alignSelf: 'stretch',
   },
   primaryButtonDisabled: { opacity: 0.4 },
-  primaryButtonText: { color: colors.textPrimary, fontSize: 16, fontWeight: '600' },
+  primaryButtonText: { color: colors.onAccent, fontFamily: "Manrope_800ExtraBold", fontSize: 16, fontWeight: "800" },
   ghostButton: {
     height: 48,
     alignItems: 'center',

@@ -15,10 +15,16 @@ import { useNavigation, useRoute } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { MusiStashTheme } from '../../../styles/theme';
+import { AppText, Eyebrow } from '../../../shared/components/ui';
+import { ChipRow } from '../../../shared/components/ui/Chip';
 import { artistProjectService } from '../services/artistProjectService';
 import { PAPER_DISCLOSURE_BODY } from '../types/experience';
 
 const c = MusiStashTheme.colors;
+
+function money(n: number): string {
+  return `$${Math.round(n).toLocaleString()}`;
+}
 const TYPES = ['Single', 'EP', 'Album', 'Visual Campaign', 'Tour', 'Other'];
 
 export default function CreateArtistProjectScreen() {
@@ -53,6 +59,8 @@ export default function CreateArtistProjectScreen() {
     if (!canSubmit || submitting) return;
     setSubmitting(true);
     try {
+      const goal = Number(fundingGoal);
+      const price = Number(sharePrice);
       const project = await artistProjectService.create({
         artistId,
         artistName,
@@ -60,22 +68,25 @@ export default function CreateArtistProjectScreen() {
         title,
         type,
         shortDescription,
-        fundingGoal: Number(fundingGoal),
-        currentPaperSharePrice: Number(sharePrice),
+        fundingGoal: goal,
+        currentPaperSharePrice: price,
         daysRemaining: Number(daysRemaining) || 30,
         artworkUrl,
       });
-      Alert.alert(
-        'Project live',
-        'Your paper project is ready. Fans can simulate backing it. No real money is involved.',
-        [
-          {
-            text: 'View project',
-            onPress: () =>
-              navigation.replace('ProjectDetail', { projectId: project.id }),
-          },
+      navigation.replace('BackingReceipt', {
+        kind: 'submit',
+        title: 'Project live',
+        subtitle: `${title.trim().toUpperCase()} is open for paper backing. No real money is involved.`,
+        projectId: project.id,
+        primaryLabel: 'View project',
+        rows: [
+          { k: 'Project', v: title.trim() || 'Untitled' },
+          { k: 'Format', v: type },
+          { k: 'Goal', v: money(goal) },
+          { k: 'Share price', v: money(price) },
+          { k: 'Shares offered', v: String(Math.round(goal / price).toLocaleString()) },
         ],
-      );
+      });
     } catch (e: any) {
       Alert.alert('Could not create project', e?.message || 'Try again');
     } finally {
@@ -105,6 +116,10 @@ export default function CreateArtistProjectScreen() {
         contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 40 }]}
         keyboardShouldPersistTaps="handled"
       >
+        <Eyebrow color={c.accentSolid}>ARTIST TOOLS</Eyebrow>
+        <AppText variant="h1" style={styles.h1}>
+          Put a project up for paper backing
+        </AppText>
         <Text style={styles.disclaimer}>{PAPER_DISCLOSURE_BODY}</Text>
 
         <Text style={styles.label}>Project title</Text>
@@ -117,22 +132,8 @@ export default function CreateArtistProjectScreen() {
           autoCapitalize="characters"
         />
 
-        <Text style={styles.label}>Type</Text>
-        <View style={styles.chipRow}>
-          {TYPES.map((t) => (
-            <TouchableOpacity
-              key={t}
-              style={[styles.chip, type === t && styles.chipActive]}
-              onPress={() => setType(t)}
-              accessibilityRole="button"
-              accessibilityState={{ selected: type === t }}
-            >
-              <Text style={[styles.chipText, type === t && styles.chipTextActive]}>
-                {t}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </View>
+        <Text style={styles.label}>Format</Text>
+        <ChipRow options={TYPES} value={type} onChange={setType} wrap style={styles.chipRow} />
 
         <Text style={styles.label}>Short pitch</Text>
         <TextInput
@@ -179,9 +180,9 @@ export default function CreateArtistProjectScreen() {
           accessibilityLabel="Publish paper project"
         >
           {submitting ? (
-            <ActivityIndicator color="#fff" />
+            <ActivityIndicator color={c.onAccent} />
           ) : (
-            <Text style={styles.submitText}>Publish paper project</Text>
+            <Text style={styles.submitText}>Submit for review</Text>
           )}
         </TouchableOpacity>
       </ScrollView>
@@ -201,16 +202,18 @@ const styles = StyleSheet.create({
   headerTitle: {
     flex: 1,
     textAlign: 'center',
-    fontSize: 17,
-    fontWeight: '600',
+    fontFamily: 'Manrope_700Bold',
+    fontSize: 16,
+    fontWeight: '700',
     color: c.textPrimary,
   },
   content: { paddingHorizontal: 20, paddingTop: 8 },
+  h1: { marginTop: 8, marginBottom: 14 },
   disclaimer: {
     fontSize: 12,
     lineHeight: 18,
     color: c.textMuted,
-    marginBottom: 20,
+    marginBottom: 12,
   },
   label: {
     fontSize: 11,
@@ -232,25 +235,20 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
   textArea: { minHeight: 96, textAlignVertical: 'top' },
-  chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  chip: {
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 999,
-    borderWidth: 1,
-    borderColor: c.borderSubtle,
-  },
-  chipActive: { backgroundColor: c.accentSoft, borderColor: c.accent },
-  chipText: { color: c.textSecondary, fontSize: 13, fontWeight: '600' },
-  chipTextActive: { color: c.accent },
+  chipRow: { marginBottom: 2 },
   submit: {
     marginTop: 28,
     height: 54,
-    borderRadius: 10,
+    borderRadius: 16,
     backgroundColor: c.accent,
     alignItems: 'center',
     justifyContent: 'center',
   },
   submitDisabled: { opacity: 0.45 },
-  submitText: { color: '#fff', fontSize: 17, fontWeight: '600' },
+  submitText: {
+    color: c.onAccent,
+    fontFamily: 'Manrope_800ExtraBold',
+    fontSize: 16.5,
+    fontWeight: '800',
+  },
 });

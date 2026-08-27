@@ -16,12 +16,14 @@ type Params = {
   rows?: ReceiptRow[];
   primaryLabel?: string;
   primaryTarget?: string; // tab route name under MainTabs
+  projectId?: string; // if set, the primary button opens ProjectDetail
 };
 
 type NavLike = {
   navigate?: (name: string, params?: Record<string, unknown>) => void;
   getParent?: () => NavLike | undefined;
   popToTop?: () => void;
+  replace?: (name: string, params?: Record<string, unknown>) => void;
 };
 
 export default function BackingReceiptScreen({
@@ -50,6 +52,15 @@ export default function BackingReceiptScreen({
     navigation?.popToTop?.();
     if (navigation?.navigate) navigation.navigate('MainTabs', { screen: name });
     else navigation?.getParent?.()?.navigate?.('MainTabs', { screen: name });
+  };
+
+  const onPrimary = () => {
+    if (p.projectId) {
+      navigation?.replace?.('ProjectDetail', { projectId: p.projectId }) ??
+        navigation?.navigate?.('ProjectDetail', { projectId: p.projectId });
+      return;
+    }
+    goTab(primaryTarget);
   };
 
   return (
@@ -86,7 +97,7 @@ export default function BackingReceiptScreen({
       <View style={styles.actions}>
         <Pressable
           style={styles.primary}
-          onPress={() => goTab(primaryTarget)}
+          onPress={onPrimary}
           accessibilityRole="button"
           accessibilityLabel={primaryLabel}
         >
