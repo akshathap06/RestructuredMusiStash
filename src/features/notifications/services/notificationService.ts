@@ -1,133 +1,136 @@
 import { supabase } from '../../../lib/supabase';
 
-export interface ProjectNotification {
+/**
+ * App notification. Field names kept broadly compatible with the old
+ * `project_notifications` shape so the current screen keeps working; Phase 3
+ * restyles the screen against `type` / `body` / `read` directly.
+ */
+export interface AppNotification {
   id: string;
-  project_request_id: string;
-  recipient_id: string;
-  sender_id: string | null;
-  notification_type: 'request_received' | 'request_accepted' | 'request_rejected' | 'price_proposed' | 'agreement_created' | 'payment_required' | 'payment_completed';
+  user_id: string;
+  recipient_id: string; // alias of user_id (back-compat)
+  type: string;
+  notification_type: string; // alias of type (back-compat)
   title: string;
-  message: string;
-  is_read: boolean;
+  body: string;
+  message: string; // alias of body (back-compat)
+  data: Record<string, unknown>;
+  read: boolean;
+  is_read: boolean; // alias of read (back-compat)
   created_at: string;
-  updated_at: string;
+}
+
+// Legacy name still imported in a few places.
+export type ProjectNotification = AppNotification;
+
+type NotificationRow = {
+  id: string;
+  user_id: string;
+  type: string | null;
+  title: string;
+  body: string | null;
+  data: Record<string, unknown> | null;
+  read: boolean;
+  created_at: string;
+};
+
+function mapNotification(row: NotificationRow): AppNotification {
+  const type = row.type ?? 'general';
+  const body = row.body ?? '';
+  return {
+    id: row.id,
+    user_id: row.user_id,
+    recipient_id: row.user_id,
+    type,
+    notification_type: type,
+    title: row.title,
+    body,
+    message: body,
+    data: row.data ?? {},
+    read: row.read,
+    is_read: row.read,
+    created_at: row.created_at,
+  };
 }
 
 export class NotificationService {
-  // Get all notifications for the current user
-  static async getUserNotifications(userId: string): Promise<ProjectNotification[]> {
-    try {
-      const { data, error } = await supabase
-        .from('project_notifications')
-        .select('*')
-        .eq('recipient_id', userId)
-        .order('created_at', { ascending: false });
-
-      if (error) {
-        console.error('Error fetching notifications:', error);
-        throw error;
-      }
-
-      return data || [];
-    } catch (error) {
-      console.error('Error in getUserNotifications:', error);
+  static async getUserNotifications(userId: string): Promise<AppNotification[]> {
+    const { data, error } = await supabase
+      .from('notifications')
+      .select('*')
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false });
+    if (error) {
+      console.error('Error fetching notifications:', error);
       throw error;
     }
+    return (data as NotificationRow[] | null)?.map(mapNotification) ?? [];
   }
 
-  // Get unread notification count
   static async getUnreadCount(userId: string): Promise<number> {
-    try {
-      const { count, error } = await supabase
-        .from('project_notifications')
-        .select('*', { count: 'exact', head: true })
-        .eq('recipient_id', userId)
-        .eq('is_read', false);
-
-      if (error) {
-        console.error('Error fetching unread count:', error);
-        throw error;
-      }
-
-      return count || 0;
-    } catch (error) {
-      console.error('Error in getUnreadCount:', error);
+    const { count, error } = await supabase
+      .from('notifications')
+      .select('id', { count: 'exact', head: true })
+      .eq('user_id', userId)
+      .eq('read', false);
+    if (error) {
+      console.error('Error fetching unread count:', error);
       throw error;
     }
+    return count ?? 0;
   }
 
-  // Mark notification as read
   static async markAsRead(notificationId: string): Promise<void> {
-    try {
-      const { error } = await supabase
-        .from('project_notifications')
-        .update({ is_read: true, updated_at: new Date().toISOString() })
-        .eq('id', notificationId);
-
-      if (error) {
-        console.error('Error marking notification as read:', error);
-        throw error;
-      }
-    } catch (error) {
-      console.error('Error in markAsRead:', error);
+    const { error } = await supabase
+      .from('notifications')
+      .update({ read: true })
+      .eq('id', notificationId);
+    if (error) {
+      console.error('Error marking notification as read:', error);
       throw error;
     }
   }
 
-  // Delete notification
-  static async deleteNotification(notificationId: string): Promise<void> {
-    try {
-      const { error } = await supabase
-        .from('project_notifications')
-        .delete()
-        .eq('id', notificationId);
-
-      if (error) {
-        console.error('Error deleting notification:', error);
-        throw error;
-      }
-    } catch (error) {
-      console.error('Error in deleteNotification:', error);
-      throw error;
-    }
-  }
-
-  // Mark all notifications as read for a user
   static async markAllAsRead(userId: string): Promise<void> {
-    try {
-      const { error } = await supabase
-        .from('project_notifications')
-        .update({ is_read: true, updated_at: new Date().toISOString() })
-        .eq('recipient_id', userId)
-        .eq('is_read', false);
-
-      if (error) {
-        console.error('Error marking all notifications as read:', error);
-        throw error;
-      }
-    } catch (error) {
-      console.error('Error in markAllAsRead:', error);
+    const { error } = await supabase
+      .from('notifications')
+      .update({ read: true })
+      .eq('user_id', userId)
+      .eq('read', false);
+    if (error) {
+      console.error('Error marking all notifications as read:', error);
       throw error;
     }
   }
 
-  // Get notifications for a specific project request
-  static async getProjectNotifications(projectRequestId: string): Promise<ProjectNotification[]> {
-    try {
-      const { data, error } = await supabase
-        .from('project_notifications')
-        .select('*')
-        .eq('project_request_id', projectRequestId)
-        .order('created_at', { ascending: false });
+  static async deleteNotification(notificationId: string): Promise<void> {
+    const { error } = await supabase
+      .from('notifications')
+      .delete()
+      .eq('id', notificationId);
+    if (error) {
+      console.error('Error deleting notification:', error);
+      throw error;
+    }
+  }
 
-      if (error) {
-        console.error('Error fetching project notifications:', error);
-        throw error;
-      }
-
-      return data || [];
-    } catch (error) {
-      console.error('Error in getProjectNotifications:', error);
+  /** Create a notification for the acting user (RLS: auth.uid() = user_id). */
+  static async create(params: {
+    userId: string;
+    type: string;
+    title: string;
+    body?: string;
+    data?: Record<string, unknown>;
+  }): Promise<void> {
+    const { error } = await supabase.from('notifications').insert({
+      user_id: params.userId,
+      type: params.type,
+      title: params.title,
+      body: params.body ?? null,
+      data: params.data ?? {},
+    });
+    if (error) {
+      console.error('Error creating notification:', error);
       throw error;
     }
   }

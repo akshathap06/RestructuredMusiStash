@@ -1,6 +1,4 @@
-import AsyncStorage from '@react-native-async-storage/async-storage';
-
-const WAITLIST_STORAGE_KEY = '@musistash_waitlist_entries';
+import { supabase } from '../../../lib/supabase';
 
 export type WaitlistRole = 'fan' | 'artist';
 
@@ -26,24 +24,37 @@ export interface JoinWaitlistParams {
   expectedAmountOptional?: number;
 }
 
-async function getEntries(): Promise<WaitlistEntry[]> {
-  try {
-    const raw = await AsyncStorage.getItem(WAITLIST_STORAGE_KEY);
-    if (!raw) return [];
-    const parsed = JSON.parse(raw);
-    return Array.isArray(parsed) ? parsed : [];
-  } catch (error) {
-    console.error('waitlistService: failed to read entries', error);
-    return [];
-  }
-}
-
-async function saveEntries(entries: WaitlistEntry[]): Promise<void> {
-  await AsyncStorage.setItem(WAITLIST_STORAGE_KEY, JSON.stringify(entries));
-}
+type WaitlistRow = {
+  id: string;
+  user_id: string | null;
+  email: string;
+  role: string;
+  source: string | null;
+  genres: string[] | null;
+  expected_amount: number | string | null;
+  interested_real_money: boolean | null;
+  consent_at: string | null;
+  created_at: string;
+};
 
 function normalizeEmail(email: string): string {
   return email.trim().toLowerCase();
+}
+
+function mapEntry(row: WaitlistRow): WaitlistEntry {
+  return {
+    id: row.id,
+    userId: row.user_id ?? undefined,
+    email: row.email,
+    role: (row.role === 'artist' ? 'artist' : 'fan') as WaitlistRole,
+    source: row.source ?? 'app',
+    genres: row.genres ?? undefined,
+    expectedAmountOptional:
+      row.expected_amount != null ? Number(row.expected_amount) : undefined,
+    interestedInRealMoney: row.interested_real_money ?? true,
+    consentAt: row.consent_at ?? row.created_at,
+    createdAt: row.created_at,
+  };
 }
 
 export async function joinWaitlist(
@@ -58,61 +69,79 @@ export async function joinWaitlist(
   }
 
   try {
-    const entries = await getEntries();
-    const alreadyJoined = entries.some(
-      (e) =>
-        normalizeEmail(e.email) === email ||
-        (params.userId && e.userId && e.userId === params.userId)
-    );
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
+    const now = new Date().toISOString();
 
-    if (alreadyJoined) {
-      return { success: false, error: 'Already on the waitlist' };
+    const { data, error } = await supabase
+      .from('waitlist_entries')
+      .insert({
+        user_id: params.userId ?? session?.user?.id ?? null,
+        email,
+        role: params.role,
+        source: params.source || 'app',
+        genres: params.genres ?? [],
+        expected_amount: params.expectedAmountOptional ?? null,
+        interested_real_money: true,
+        consent_at: now,
+      })
+      .select('*')
+      .single();
+
+    if (error) {
+      // 23505 = unique_violation on the email column.
+      if (error.code === '23505') {
+        return { success: false, error: 'Already on the waitlist' };
+      }
+      return { success: false, error: error.message || 'Failed to join waitlist' };
     }
 
-    const now = new Date().toISOString();
-    const entry: WaitlistEntry = {
-      id: `wl_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`,
-      userId: params.userId,
-      email,
-      role: params.role,
-      source: params.source || 'app',
-      genres: params.genres,
-      expectedAmountOptional: params.expectedAmountOptional,
-      interestedInRealMoney: true,
-      consentAt: now,
-      createdAt: now,
-    };
-
-    entries.push(entry);
-    await saveEntries(entries);
-    return { success: true, entry };
-  } catch (error) {
-    console.error('waitlistService: joinWaitlist failed', error);
+    return { success: true, entry: mapEntry(data as WaitlistRow) };
+  } catch (err) {
+    console.error('waitlistService: joinWaitlist failed', err);
     return { success: false, error: 'Failed to join waitlist' };
   }
 }
 
 export async function hasJoined(emailOrUserId: string): Promise<boolean> {
-  if (!emailOrUserId?.trim()) return false;
+  const needle = emailOrUserId?.trim();
+  if (!needle) return false;
 
   try {
-    const entries = await getEntries();
-    const needle = emailOrUserId.trim();
-    const emailNeedle = normalizeEmail(needle);
+    if (needle.includes('@')) {
+      const { data, error } = await supabase.rpc('rpc_waitlist_has_email', {
+        p_email: needle,
+      });
+      if (error) throw error;
+      return !!data;
+    }
 
-    return entries.some(
-      (e) =>
-        normalizeEmail(e.email) === emailNeedle ||
-        (e.userId != null && e.userId === needle)
-    );
-  } catch (error) {
-    console.error('waitlistService: hasJoined failed', error);
+    // Treat as a user id — RLS (waitlist_read_own) scopes this to the caller.
+    const { data, error } = await supabase
+      .from('waitlist_entries')
+      .select('id')
+      .eq('user_id', needle)
+      .limit(1);
+    if (error) throw error;
+    return (data?.length ?? 0) > 0;
+  } catch (err) {
+    console.error('waitlistService: hasJoined failed', err);
     return false;
   }
 }
 
 export async function getWaitlistEntries(): Promise<WaitlistEntry[]> {
-  return getEntries();
+  // RLS limits this to the caller's own rows.
+  const { data, error } = await supabase
+    .from('waitlist_entries')
+    .select('*')
+    .order('created_at', { ascending: false });
+  if (error) {
+    console.error('waitlistService: getWaitlistEntries failed', error);
+    return [];
+  }
+  return (data as WaitlistRow[] | null)?.map(mapEntry) ?? [];
 }
 
 export const waitlistService = {
