@@ -1,13 +1,21 @@
+// "Paper Mobile" palette (mirror of src/styles/theme.ts colors).
 export const colors = {
-  background: '#080A0D',
-  surface: '#101318',
-  borderSubtle: 'rgba(255,255,255,0.10)',
-  textPrimary: '#F5F3EF',
-  textSecondary: '#AAA8AE',
-  textMuted: '#73717A',
-  accent: '#8B5CF6',
-  positive: '#62D892',
-  negative: '#EF4444',
+  background: '#0A0A0C',
+  surface: '#15151A',
+  surfaceElevated: '#1D1D24',
+  line: '#26262D',
+  listDivider: '#1A1A20',
+  borderSubtle: 'rgba(255,255,255,0.08)',
+  textPrimary: '#F4F4F6',
+  textSecondary: '#C9C6D4',
+  textMuted: '#9B9BA4',
+  textFaint: '#6A6A74',
+  accent: '#4B9CD3',
+  accentSolid: '#8ECDF0',
+  accentTint: 'rgba(75,156,211,0.14)',
+  onAccent: '#0A0A0C',
+  positive: '#8ECDF0',
+  negative: '#FF6A5E',
 } as const;
 
 export function formatMoney(value: number): string {

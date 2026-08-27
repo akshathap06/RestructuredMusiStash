@@ -13,28 +13,30 @@ import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '../../../contexts/AuthContext';
 import { moderationService } from '../../../services/moderationService';
+import { MusiStashTheme } from '../../../styles/theme';
+import { paperWalletService } from '../../paper-trading/services/paperWalletService';
+
+const c = MusiStashTheme.colors;
 
 export default function SettingsScreen({ navigation }: any) {
   const { user, logout } = useAuth();
   const insets = useSafeAreaInsets();
   const [aiDataConsent, setAiDataConsent] = useState(false);
   const [isLoadingConsent, setIsLoadingConsent] = useState(true);
+  const [resetting, setResetting] = useState(false);
 
   useEffect(() => {
-    loadSettings();
+    (async () => {
+      if (user?.id) {
+        const consent = await moderationService.hasAIConsent(user.id);
+        setAiDataConsent(consent);
+        setIsLoadingConsent(false);
+      }
+    })();
   }, [user?.id]);
-
-  const loadSettings = async () => {
-    if (user?.id) {
-      const consent = await moderationService.hasAIConsent(user.id);
-      setAiDataConsent(consent);
-      setIsLoadingConsent(false);
-    }
-  };
 
   const handleAIConsentToggle = async (value: boolean) => {
     if (!user?.id) return;
-    
     if (!value) {
       Alert.alert(
         'Revoke AI Consent',
@@ -49,7 +51,7 @@ export default function SettingsScreen({ navigation }: any) {
               setAiDataConsent(false);
             },
           },
-        ]
+        ],
       );
     } else {
       await moderationService.setAIConsent(user.id, true);
@@ -57,10 +59,39 @@ export default function SettingsScreen({ navigation }: any) {
     }
   };
 
+  const handleResetSimulation = () => {
+    Alert.alert(
+      'Reset simulation',
+      'Clear all paper positions and restore your $10,000 paper balance? This cannot be undone.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Reset',
+          style: 'destructive',
+          onPress: async () => {
+            if (!user?.id) return;
+            setResetting(true);
+            try {
+              await paperWalletService.resetAccount(user.id);
+              Alert.alert('Done', 'Your paper account is back to $10,000.');
+            } catch (e) {
+              Alert.alert(
+                'Reset failed',
+                e instanceof Error ? e.message : 'Please try again.',
+              );
+            } finally {
+              setResetting(false);
+            }
+          },
+        },
+      ],
+    );
+  };
+
   const handleDeleteAccount = () => {
     Alert.alert(
       'Delete Account',
-      'Are you sure you want to permanently delete your account?\n\nThis will:\n• Delete all your posts and content\n• Remove your profile information\n• Delete your messages and conversations\n• Remove all your data from MusiStash\n\nThis action cannot be undone.',
+      'Are you sure you want to permanently delete your account?\n\nThis will remove your profile, posts, and all your data from MusiStash. This action cannot be undone.',
       [
         { text: 'Cancel', style: 'cancel' },
         {
@@ -81,29 +112,33 @@ export default function SettingsScreen({ navigation }: any) {
                         Alert.alert('Error', 'User not found. Please try logging in again.');
                         return;
                       }
-
                       const result = await moderationService.deleteUserAccount(user.id);
-
                       if (result.success) {
                         Alert.alert(
                           'Account Deleted',
                           'Your account has been successfully deleted. You will now be logged out.',
-                          [{ text: 'OK', onPress: logout }]
+                          [{ text: 'OK', onPress: logout }],
                         );
                       } else {
-                        Alert.alert('Error', result.error || 'Failed to delete account. Please contact support.');
+                        Alert.alert(
+                          'Error',
+                          result.error || 'Failed to delete account. Please contact support.',
+                        );
                       }
                     } catch (error) {
                       console.error('Error deleting account:', error);
-                      Alert.alert('Error', 'Something went wrong. Please contact support at support@musistash.com');
+                      Alert.alert(
+                        'Error',
+                        'Something went wrong. Please contact support at support@musistash.com',
+                      );
                     }
                   },
                 },
-              ]
+              ],
             );
           },
         },
-      ]
+      ],
     );
   };
 
@@ -111,13 +146,14 @@ export default function SettingsScreen({ navigation }: any) {
     Linking.openURL('mailto:support@musistash.com?subject=MusiStash%20Support%20Request');
   };
 
-  const SettingsItem = ({ 
-    icon, 
-    title, 
-    subtitle, 
-    onPress, 
+  const SettingsItem = ({
+    icon,
+    title,
+    subtitle,
+    onPress,
     rightElement,
     danger = false,
+    first = false,
   }: {
     icon: string;
     title: string;
@@ -125,194 +161,181 @@ export default function SettingsScreen({ navigation }: any) {
     onPress?: () => void;
     rightElement?: React.ReactNode;
     danger?: boolean;
+    first?: boolean;
   }) => (
-    <TouchableOpacity 
-      style={[styles.settingsItem, danger && styles.settingsItemDanger]}
+    <TouchableOpacity
+      style={[styles.item, !first && styles.itemDivider]}
       onPress={onPress}
       disabled={!onPress && !rightElement}
       activeOpacity={onPress ? 0.7 : 1}
+      accessibilityRole={onPress ? 'button' : undefined}
+      accessibilityLabel={title}
     >
-      <View style={[styles.settingsIconContainer, danger && styles.settingsIconDanger]}>
-        <Ionicons 
-          name={icon as any} 
-          size={22} 
-          color={danger ? '#EF4444' : '#3B82F6'} 
-        />
+      <View style={[styles.iconChip, danger && styles.iconChipDanger]}>
+        <Ionicons name={icon as any} size={19} color={danger ? c.negative : c.accentLight} />
       </View>
-      <View style={styles.settingsTextContainer}>
-        <Text style={[styles.settingsTitle, danger && styles.settingsTitleDanger]}>
-          {title}
-        </Text>
-        {subtitle && (
-          <Text style={styles.settingsSubtitle}>{subtitle}</Text>
-        )}
+      <View style={styles.itemText}>
+        <Text style={[styles.itemTitle, danger && styles.itemTitleDanger]}>{title}</Text>
+        {subtitle ? <Text style={styles.itemSubtitle}>{subtitle}</Text> : null}
       </View>
-      {rightElement || (onPress && (
-        <Ionicons name="chevron-forward" size={20} color={danger ? '#EF4444' : '#6B7280'} />
-      ))}
+      {rightElement ||
+        (onPress && (
+          <Ionicons
+            name="chevron-forward"
+            size={17}
+            color={danger ? c.negative : c.textFaint}
+          />
+        ))}
     </TouchableOpacity>
   );
 
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
-      {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity 
+        <TouchableOpacity
           style={styles.backButton}
           onPress={() => navigation.goBack()}
+          accessibilityRole="button"
+          accessibilityLabel="Go back"
         >
-          <Ionicons name="chevron-back" size={24} color="#FFFFFF" />
+          <Ionicons name="chevron-back" size={22} color={c.textPrimary} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Settings</Text>
         <View style={styles.headerPlaceholder} />
       </View>
 
-      <ScrollView 
+      <ScrollView
         style={styles.content}
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: insets.bottom + 20 }}
       >
-        {/* Account Section */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Account</Text>
-          <View style={styles.sectionContent}>
-            <SettingsItem
-              icon="person-outline"
-              title="Edit Profile"
-              subtitle="Change your name and profile picture"
-              onPress={() => navigation.navigate('ProfileSettings')}
-            />
-            <SettingsItem
-              icon="notifications-outline"
-              title="Notifications"
-              subtitle="Manage notification preferences"
-              onPress={() => navigation.navigate('Notifications')}
-            />
-          </View>
+        <Text style={styles.sectionTitle}>ACCOUNT</Text>
+        <View style={styles.card}>
+          <SettingsItem
+            first
+            icon="person-outline"
+            title="Edit profile"
+            subtitle="Name, photo, and public bio"
+            onPress={() => navigation.navigate('ProfileSettings')}
+          />
+          <SettingsItem
+            icon="notifications-outline"
+            title="Notifications"
+            subtitle="Manage notification preferences"
+            onPress={() => navigation.navigate('Notifications')}
+          />
         </View>
 
-        {/* Privacy Section */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Privacy & Data</Text>
-          <View style={styles.sectionContent}>
-            <SettingsItem
-              icon="ban-outline"
-              title="Blocked Users"
-              subtitle="Manage users you've blocked"
-              onPress={() => navigation.navigate('BlockedUsers')}
-            />
-            <SettingsItem
-              icon="sparkles-outline"
-              title="AI Data Processing"
-              subtitle="Allow AI features to process your data"
-              rightElement={
-                <Switch
-                  value={aiDataConsent}
-                  onValueChange={handleAIConsentToggle}
-                  trackColor={{ false: '#3f3f46', true: 'rgba(59, 130, 246, 0.5)' }}
-                  thumbColor={aiDataConsent ? '#3B82F6' : '#71717a'}
-                  disabled={isLoadingConsent}
-                />
-              }
-            />
-            <SettingsItem
-              icon="shield-checkmark-outline"
-              title="Privacy Policy"
-              subtitle="Read our privacy policy"
-              onPress={() => navigation.navigate('PrivacyPolicy')}
-            />
-            <SettingsItem
-              icon="document-text-outline"
-              title="Terms of Service"
-              subtitle="Read our terms of service"
-              onPress={() => navigation.navigate('TermsOfService')}
-            />
-          </View>
+        <Text style={styles.sectionTitle}>PRIVACY &amp; DATA</Text>
+        <View style={styles.card}>
+          <SettingsItem
+            first
+            icon="sparkles-outline"
+            title="AI momentum analysis"
+            subtitle="Let Paper score projects from your activity"
+            rightElement={
+              <Switch
+                value={aiDataConsent}
+                onValueChange={handleAIConsentToggle}
+                trackColor={{ false: c.line, true: c.accent }}
+                thumbColor="#FFFFFF"
+                disabled={isLoadingConsent}
+              />
+            }
+          />
+          <SettingsItem
+            icon="ban-outline"
+            title="Blocked accounts"
+            subtitle="Artists and investors you've hidden"
+            onPress={() => navigation.navigate('BlockedUsers')}
+          />
+          <SettingsItem
+            icon="shield-checkmark-outline"
+            title="Privacy policy"
+            subtitle="Read the policy"
+            onPress={() => navigation.navigate('PrivacyPolicy')}
+          />
+          <SettingsItem
+            icon="document-text-outline"
+            title="Terms of service"
+            subtitle="Read the terms"
+            onPress={() => navigation.navigate('TermsOfService')}
+          />
         </View>
 
-        {/* Support Section */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Support</Text>
-          <View style={styles.sectionContent}>
-            <SettingsItem
-              icon="help-circle-outline"
-              title="Help Center"
-              subtitle="Get help with MusiStash"
-              onPress={() => navigation.navigate('HelpCenter')}
-            />
-            <SettingsItem
-              icon="mail-outline"
-              title="Contact Support"
-              subtitle="support@musistash.com"
-              onPress={handleContactSupport}
-            />
-            <SettingsItem
-              icon="bug-outline"
-              title="Report a Bug"
-              subtitle="Help us improve MusiStash"
-              onPress={() => navigation.navigate('ReportBug')}
-            />
-          </View>
+        <Text style={styles.sectionTitle}>SUPPORT</Text>
+        <View style={styles.card}>
+          <SettingsItem
+            first
+            icon="help-circle-outline"
+            title="Help center"
+            subtitle="How paper backing works"
+            onPress={() => navigation.navigate('HelpCenter')}
+          />
+          <SettingsItem
+            icon="mail-outline"
+            title="Contact support"
+            subtitle="support@musistash.com"
+            onPress={handleContactSupport}
+          />
+          <SettingsItem
+            icon="bug-outline"
+            title="Report a bug"
+            subtitle="Help us improve MusiStash"
+            onPress={() => navigation.navigate('ReportBug')}
+          />
+          <SettingsItem
+            icon="document-text-outline"
+            title="Changelog"
+            subtitle="What's new"
+            onPress={() => navigation.navigate('Changelog')}
+          />
+          <SettingsItem
+            icon="logo-github"
+            title="Open source licenses"
+            subtitle="Third-party libraries"
+            onPress={() => navigation.navigate('OpenSourceLicenses')}
+          />
         </View>
 
-        {/* About Section */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>About</Text>
-          <View style={styles.sectionContent}>
-            <SettingsItem
-              icon="information-circle-outline"
-              title="App Version"
-              subtitle="1.0.0"
-            />
-            <SettingsItem
-              icon="document-text-outline"
-              title="Changelog"
-              subtitle="What's new in MusiStash"
-              onPress={() => navigation.navigate('Changelog')}
-            />
-            <SettingsItem
-              icon="logo-github"
-              title="Open Source Licenses"
-              subtitle="Third-party libraries"
-              onPress={() => navigation.navigate('OpenSourceLicenses')}
-            />
-          </View>
+        <Text style={[styles.sectionTitle, styles.dangerSectionTitle]}>
+          SIMULATION CONTROLS
+        </Text>
+        <View style={[styles.card, styles.dangerCard]}>
+          <SettingsItem
+            first
+            danger
+            icon="refresh-outline"
+            title="Reset simulation"
+            subtitle={resetting ? 'Resetting…' : 'Clear positions, restore $10,000'}
+            onPress={resetting ? undefined : handleResetSimulation}
+          />
+          <SettingsItem
+            danger
+            icon="log-out-outline"
+            title="Log out"
+            subtitle="Sign out of this device"
+            onPress={() => {
+              Alert.alert('Log Out', 'Are you sure you want to log out?', [
+                { text: 'Cancel', style: 'cancel' },
+                { text: 'Log Out', onPress: logout },
+              ]);
+            }}
+          />
+          <SettingsItem
+            danger
+            icon="trash-outline"
+            title="Delete account"
+            subtitle="Permanently delete your account and data"
+            onPress={handleDeleteAccount}
+          />
         </View>
 
-        {/* Danger Zone */}
-        <View style={styles.section}>
-          <Text style={[styles.sectionTitle, styles.dangerSectionTitle]}>Danger Zone</Text>
-          <View style={styles.sectionContent}>
-            <SettingsItem
-              icon="log-out-outline"
-              title="Log Out"
-              subtitle="Sign out of your account"
-              onPress={() => {
-                Alert.alert(
-                  'Log Out',
-                  'Are you sure you want to log out?',
-                  [
-                    { text: 'Cancel', style: 'cancel' },
-                    { text: 'Log Out', onPress: logout }
-                  ]
-                );
-              }}
-              danger
-            />
-            <SettingsItem
-              icon="trash-outline"
-              title="Delete Account"
-              subtitle="Permanently delete your account and data"
-              onPress={handleDeleteAccount}
-              danger
-            />
-          </View>
-        </View>
-
-        {/* Footer */}
         <View style={styles.footer}>
-          <Text style={styles.footerText}>MusiStash © 2025</Text>
-          <Text style={styles.footerSubtext}>Made with ♥ for musicians</Text>
+          <Text style={styles.footerText}>MusiStash 1.0.0 · paper trading simulation</Text>
+          <Text style={styles.footerSubtext}>
+            No real money, securities, or ownership.
+          </Text>
         </View>
       </ScrollView>
     </View>
@@ -320,114 +343,86 @@ export default function SettingsScreen({ navigation }: any) {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#000000',
-  },
+  container: { flex: 1, backgroundColor: c.background },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255, 255, 255, 0.1)',
+    paddingHorizontal: 14,
+    paddingBottom: 14,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: c.listDivider,
   },
   backButton: {
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: 'rgba(255, 255, 255, 0.08)',
+    backgroundColor: c.surface,
     alignItems: 'center',
     justifyContent: 'center',
   },
   headerTitle: {
+    fontFamily: 'Manrope_800ExtraBold',
     fontSize: 18,
-    fontWeight: '700',
-    color: '#FFFFFF',
+    fontWeight: '800',
+    color: c.textPrimary,
+    letterSpacing: -0.3,
   },
-  headerPlaceholder: {
-    width: 40,
-  },
-  content: {
-    flex: 1,
-    paddingHorizontal: 16,
-  },
-  section: {
-    marginTop: 24,
-  },
+  headerPlaceholder: { width: 40 },
+  content: { flex: 1, paddingHorizontal: 20 },
   sectionTitle: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: '#6B7280',
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-    marginBottom: 12,
-    marginLeft: 4,
+    fontFamily: 'Manrope_700Bold',
+    fontSize: 11,
+    fontWeight: '700',
+    color: c.textFaint,
+    letterSpacing: 1.6,
+    marginTop: 26,
+    marginBottom: 8,
   },
-  dangerSectionTitle: {
-    color: '#EF4444',
-  },
-  sectionContent: {
-    backgroundColor: 'rgba(255, 255, 255, 0.03)',
-    borderRadius: 16,
+  dangerSectionTitle: { color: c.negative },
+  card: {
+    backgroundColor: c.surface,
+    borderRadius: 14,
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.08)',
+    borderColor: c.line,
     overflow: 'hidden',
   },
-  settingsItem: {
+  dangerCard: {
+    backgroundColor: 'rgba(255,106,94,0.06)',
+    borderColor: 'rgba(255,106,94,0.24)',
+  },
+  item: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingVertical: 14,
     paddingHorizontal: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255, 255, 255, 0.05)',
+    minHeight: 64,
   },
-  settingsItemDanger: {
-    backgroundColor: 'rgba(239, 68, 68, 0.05)',
+  itemDivider: {
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: c.listDivider,
   },
-  settingsIconContainer: {
-    width: 40,
-    height: 40,
-    borderRadius: 12,
-    backgroundColor: 'rgba(59, 130, 246, 0.1)',
+  iconChip: {
+    width: 38,
+    height: 38,
+    borderRadius: 10,
+    backgroundColor: c.accentTint,
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 14,
   },
-  settingsIconDanger: {
-    backgroundColor: 'rgba(239, 68, 68, 0.1)',
-  },
-  settingsTextContainer: {
-    flex: 1,
-  },
-  settingsTitle: {
-    fontSize: 16,
-    fontWeight: '500',
-    color: '#FFFFFF',
+  iconChipDanger: { backgroundColor: 'rgba(255,106,94,0.13)' },
+  itemText: { flex: 1 },
+  itemTitle: {
+    fontFamily: 'Manrope_700Bold',
+    fontSize: 15,
+    fontWeight: '700',
+    color: c.textPrimary,
     marginBottom: 2,
   },
-  settingsTitleDanger: {
-    color: '#EF4444',
-  },
-  settingsSubtitle: {
-    fontSize: 13,
-    color: '#6B7280',
-  },
-  footer: {
-    alignItems: 'center',
-    paddingVertical: 32,
-  },
-  footerText: {
-    fontSize: 14,
-    color: '#6B7280',
-    marginBottom: 4,
-  },
-  footerSubtext: {
-    fontSize: 12,
-    color: '#4B5563',
-  },
+  itemTitleDanger: { color: c.negative },
+  itemSubtitle: { fontSize: 12.5, color: c.textMuted },
+  footer: { alignItems: 'center', paddingVertical: 32 },
+  footerText: { fontSize: 11.5, color: c.textFaint, marginBottom: 4 },
+  footerSubtext: { fontSize: 11.5, color: c.textFaint },
 });
-
-
-

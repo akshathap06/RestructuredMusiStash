@@ -175,6 +175,13 @@ class PaperWalletService {
     return mapWallet(data as WalletRow);
   }
 
+  /** Clear positions + ledger and restore the $10,000 grant. */
+  async resetAccount(_userId?: string): Promise<PaperWallet> {
+    const { data, error } = await supabase.rpc('rpc_reset_paper_account');
+    if (error) throw new Error(error.message);
+    return mapWallet(data as WalletRow);
+  }
+
   async getWallet(userId: string): Promise<PaperWallet | null> {
     const { data, error } = await supabase
       .from('paper_wallets')
