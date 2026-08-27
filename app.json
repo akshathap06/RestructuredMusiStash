@@ -76,7 +76,8 @@
       "expo-document-picker",
       "expo-media-library",
       "expo-camera",
-      "expo-apple-authentication"
+      "expo-apple-authentication",
+      "expo-font"
     ],
     "extra": {
       "eas": {

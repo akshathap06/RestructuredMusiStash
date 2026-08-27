@@ -5,6 +5,32 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Provider as PaperProvider } from 'react-native-paper';
+import { Text as RNText, TextInput as RNTextInput } from 'react-native';
+import {
+  useFonts,
+  Manrope_400Regular,
+  Manrope_500Medium,
+  Manrope_600SemiBold,
+  Manrope_700Bold,
+  Manrope_800ExtraBold,
+} from '@expo-google-fonts/manrope';
+
+// Default every <Text>/<TextInput> to Manrope once the family is loaded, so
+// legacy screens pick up the typeface without touching each StyleSheet.
+let fontDefaultsApplied = false;
+function applyFontDefaults() {
+  if (fontDefaultsApplied) return;
+  fontDefaultsApplied = true;
+  const base = { fontFamily: 'Manrope_400Regular' as const };
+  // @ts-expect-error defaultProps is untyped on host components
+  RNText.defaultProps = RNText.defaultProps || {};
+  // @ts-expect-error
+  RNText.defaultProps.style = [base, RNText.defaultProps.style];
+  // @ts-expect-error
+  RNTextInput.defaultProps = RNTextInput.defaultProps || {};
+  // @ts-expect-error
+  RNTextInput.defaultProps.style = [base, RNTextInput.defaultProps.style];
+}
 // ============================================
 // FEATURE-BASED IMPORTS (Organized by Feature)
 // ============================================
@@ -1007,6 +1033,15 @@ function AppContent() {
 }
 
 export default function App() {
+  const [fontsLoaded, fontError] = useFonts({
+    Manrope_400Regular,
+    Manrope_500Medium,
+    Manrope_600SemiBold,
+    Manrope_700Bold,
+    Manrope_800ExtraBold,
+  });
+  if (fontsLoaded) applyFontDefaults();
+
   useEffect(() => {
     // Handle deep links for Stripe Connect returns and Password Reset
     const handleDeepLink = async (event: { url: string }) => {
@@ -1133,6 +1168,12 @@ export default function App() {
     const timer = setTimeout(() => setAppReady(true), 100);
     return () => clearTimeout(timer);
   }, []);
+
+  // Hold on a plain dark screen until Manrope is ready (bundled asset — instant);
+  // fontError still lets the app through on the system font.
+  if (!fontsLoaded && !fontError) {
+    return <View style={{ flex: 1, backgroundColor: '#0A0A0C' }} />;
+  }
 
   return (
     <ErrorBoundary>

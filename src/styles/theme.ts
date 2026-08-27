@@ -1,170 +1,225 @@
-// V2 Design Direction A — premium dark violet
-// MusiStash Brand Theme Configuration - Adapted from Figma Design
+// "Paper Mobile" design system (canvas 1a). Dark-first, flat (no gradients/glow),
+// Manrope, one accent event per screen. Every legacy key below is kept as an
+// alias onto the new blue ramp so pre-redesign screens still compile/run.
+const ACCENT = '#4B9CD3';        // Carolina blue — money, progress, THE primary action
+const ACCENT_SOFT = '#8ECDF0';   // gains / positive deltas (blue, not green)
+const ACCENT_DEEP = '#357FB0';   // pressed
+const INK_ON_ACCENT = '#0A0A0C'; // ink on accent — never white (6.6:1)
+
 export const MusiStashTheme = {
   colors: {
-    // Experience screens (artist profile / project detail)
-    background: '#080A0D',
-    surface: '#101318',
-    surfaceElevated: '#151920',
-    borderSubtle: 'rgba(255,255,255,0.10)',
-    borderStrong: 'rgba(255,255,255,0.16)',
-    textPrimary: '#F5F3EF',
-    textSecondary: '#AAA8AE',
-    textMuted: '#73717A',
-    accentPressed: '#7847E8',
-    accentSoft: 'rgba(139,92,246,0.15)',
-    positive: '#62D892',
-    overlay: 'rgba(0,0,0,0.44)',
+    // --- Paper tokens -----------------------------------------------------
+    background: '#0A0A0C',
+    surface: '#15151A',
+    surfaceElevated: '#1D1D24',
+    line: '#26262D',             // card / control borders
+    listDivider: '#1A1A20',      // hairline between list rows
+    borderSubtle: 'rgba(255,255,255,0.08)',
+    borderStrong: 'rgba(255,255,255,0.14)',
+    textPrimary: '#F4F4F6',
+    textSecondary: '#C9C6D4',
+    textMuted: '#9B9BA4',
+    textFaint: '#6A6A74',        // eyebrows, meta
+    accentPressed: ACCENT_DEEP,
+    accentSoft: 'rgba(75,156,211,0.14)', // tint fill (kept as an rgba for existing call sites)
+    accentTint: 'rgba(75,156,211,0.14)',
+    accentSolid: ACCENT_SOFT,    // solid light-blue for +deltas / gain text
+    onAccent: INK_ON_ACCENT,
+    positive: ACCENT_SOFT,       // design uses blue for positive, not green
+    negative: '#FF6A5E',
+    overlay: 'rgba(0,0,0,0.62)',
     divider: 'rgba(255,255,255,0.08)',
-    progressTrack: 'rgba(255,255,255,0.12)',
+    progressTrack: '#26262D',
 
-    // Core brand colors - From Figma Dark Theme
-    foreground: '#FCFCFD',     // oklch(.985 0 0) - Almost white text
-    card: '#101318',           // surface
-    cardForeground: '#F5F3EF',
-    
-    // Primary colors
-    primary: '#FCFCFD',        // White primary (oklch(.985 0 0))
-    primaryForeground: '#353638', // Dark text on primary (oklch(.205 0 0))
-    
-    // Secondary colors
-    secondary: '#454648',      // oklch(.269 0 0) - Dark gray
-    secondaryForeground: '#FCFCFD', // White text on secondary
-    
-    // Muted colors
-    muted: '#454648',          // oklch(.269 0 0)
-    mutedForeground: '#B5B5BA', // oklch(.708 0 0) - Medium gray
-    
-    // Accent colors (MusiStash Violet)
-    accent: '#8B5CF6',         // Violet-500 for primary actions
-    accentLight: '#A78BFA',    // Violet-400 for highlights
-    accentDark: '#7C3AED',     // Violet-600 for hover states
-    accentForeground: '#FCFCFD', // White text on accent
-    
-    // Success/Payment color (Green - only for payment-related UI)
-    success: '#10B981',        // Emerald-500 for success/payment states
-    payment: '#10B981',        // Emerald-500 for payment-related UI
-    
-    // Destructive colors
-    destructive: '#DC2626',    // Red for errors
-    destructiveForeground: '#F87171', // Lighter red for text
-    
+    // --- Core brand ----------------------------------------------------
+    foreground: '#F4F4F6',
+    card: '#15151A',
+    cardForeground: '#F4F4F6',
+
+    primary: '#F4F4F6',         // white primary (e.g. Follow button)
+    primaryForeground: '#0A0A0C',
+
+    secondary: '#26262D',
+    secondaryForeground: '#F4F4F6',
+
+    muted: '#26262D',
+    mutedForeground: '#9B9BA4',
+
+    // Accent (Paper blue)
+    accent: ACCENT,
+    accentLight: ACCENT_SOFT,
+    accentDark: ACCENT_DEEP,
+    accentForeground: INK_ON_ACCENT,
+
+    // Success/Payment — remapped to accent (payment UI was removed)
+    success: ACCENT,
+    payment: ACCENT,
+
+    // Destructive
+    destructive: '#FF6A5E',
+    destructiveForeground: '#FF6A5E',
+
     // Border colors
-    border: '#454648',         // oklch(.269 0 0) - Dark border
-    borderLight: '#6B7280',    // Slightly lighter for focus
-    input: '#454648',          // Input border color
-    inputBackground: '#1F2937', // Input background
-    
-    // Ring/Focus colors
-    ring: '#71717A',           // oklch(.439 0 0) - Focus ring
-    
-    // Gradients (keys retained; values are violet brand equivalents)
-    gradientBlue: '#8B5CF6',      // Violet-500 (primary brand)
-    gradientBlueLight: '#A78BFA', // Violet-400
-    gradientBlueDark: '#7C3AED',  // Violet-600
-    gradientViolet: '#8B5CF6',
-    gradientVioletLight: '#A78BFA',
-    gradientVioletDark: '#7C3AED',
-    
-    // Grays from Figma palette
-    gray100: '#F7F7F8',        // Very light gray
-    gray200: '#EBEBED',        // Light gray
-    gray300: '#DCDCE0',        // Medium light gray
-    gray400: '#B5B5BA',        // Medium gray
-    gray500: '#8C8C93',        // Dark gray
-    gray600: '#717178',        // Darker gray
-    gray700: '#5F5F66',        // Very dark gray
-    gray800: '#474750',        // Almost black
-    gray900: '#353638',        // Near black
-    
-    // Chart colors (violet scale)
-    chart1: '#8B5CF6',         // Violet-500
-    chart2: '#A78BFA',         // Violet-400
-    chart3: '#7C3AED',         // Violet-600
-    chart4: '#C4B5FD',         // Violet-300
-    chart5: '#6D28D9',         // Violet-700
-    
-    // Special UI colors
+    border: '#26262D',
+    borderLight: '#33333D',
+    input: '#26262D',
+    inputBackground: '#15151A',
+
+    // Ring/Focus
+    ring: ACCENT,
+
+    // Gradients (keys retained; all flattened to the accent — no gradients)
+    gradientBlue: ACCENT,
+    gradientBlueLight: ACCENT_SOFT,
+    gradientBlueDark: ACCENT_DEEP,
+    gradientViolet: ACCENT,
+    gradientVioletLight: ACCENT_SOFT,
+    gradientVioletDark: ACCENT_DEEP,
+
+    // Grays
+    gray100: '#F4F4F6',
+    gray200: '#D5D4DA',
+    gray300: '#A9A8B0',
+    gray400: '#9B9BA4',
+    gray500: '#6A6A74',
+    gray600: '#4E4E58',
+    gray700: '#33333D',
+    gray800: '#26262D',
+    gray900: '#15151A',
+
+    // Chart colors (blue scale)
+    chart1: ACCENT,
+    chart2: ACCENT_SOFT,
+    chart3: ACCENT_DEEP,
+    chart4: '#B9E2F6',
+    chart5: '#2A6B96',
+
+    // Special
     white: '#FFFFFF',
     black: '#000000',
     transparent: 'transparent',
-    
-    // MusiStash brand blue keys (kept for compat; values map to violet)
-    blue500: '#8B5CF6',
-    blue400: '#A78BFA',
-    blue600: '#7C3AED',
-    
-    // Brand violet aliases
-    purple500: '#8B5CF6',
-    purple400: '#A78BFA',
+
+    // Legacy brand aliases → blue
+    blue500: ACCENT,
+    blue400: ACCENT_SOFT,
+    blue600: ACCENT_DEEP,
+    purple500: ACCENT,
+    purple400: ACCENT_SOFT,
   },
   
-  // Typography scale - From Figma Design System (index.css)
+  // Manrope family names as loaded by @expo-google-fonts/manrope.
+  // When a custom font is loaded, iOS ignores fontWeight, so the weight lives in
+  // the family. fontWeight is kept for Android / system-font fallback.
+  fonts: {
+    regular: 'Manrope_400Regular',
+    medium: 'Manrope_500Medium',
+    semibold: 'Manrope_600SemiBold',
+    bold: 'Manrope_700Bold',
+    extrabold: 'Manrope_800ExtraBold',
+  },
+
+  // Typography scale — "Paper Mobile" (canvas 1a handoff notes)
   typography: {
-    // Headings (from Figma globals.css)
+    // Display 46/800/−.045em — big screen headline (Explore, Portfolio value)
+    display: {
+      fontFamily: 'Manrope_800ExtraBold',
+      fontSize: 46,
+      fontWeight: '800' as const,
+      letterSpacing: -2,
+      lineHeight: 46,
+    },
+    // Oversized tabular money readout
+    money: {
+      fontFamily: 'Manrope_800ExtraBold',
+      fontSize: 42,
+      fontWeight: '800' as const,
+      letterSpacing: -1.6,
+      lineHeight: 44,
+    },
+    // Legacy scale kept at original sizes (many pre-redesign screens read these);
+    // only fontFamily is added. Redesigned screens use `display` / `money` /
+    // `eyebrow` above or explicit inline styles.
     h1: {
-      fontSize: 48,         // text-5xl (3rem) - Landing page rotating words
-      fontWeight: '500' as const, // --font-weight-medium
-      letterSpacing: 0,     // No letter spacing for large text in Figma
-      lineHeight: 48,       // 1:1 ratio for h1 (line-height: 1)
+      fontFamily: 'Manrope_700Bold',
+      fontSize: 48,
+      fontWeight: '500' as const,
+      letterSpacing: 0,
+      lineHeight: 48,
     },
     h2: {
-      fontSize: 36,         // text-4xl (2.25rem) - "Musi$tash" logo
+      fontFamily: 'Manrope_700Bold',
+      fontSize: 36,
       fontWeight: '600' as const,
       letterSpacing: 0,
-      lineHeight: 40,       // ~1.11 ratio
+      lineHeight: 40,
     },
     h3: {
-      fontSize: 24,         // text-2xl (1.5rem) - Section titles
+      fontFamily: 'Manrope_600SemiBold',
+      fontSize: 24,
       fontWeight: '500' as const,
       letterSpacing: 0,
-      lineHeight: 32,       // 1.33 ratio (var(--text-2xl--line-height))
+      lineHeight: 32,
     },
     h4: {
-      fontSize: 20,         // text-xl (1.25rem) - Profile names
+      fontFamily: 'Manrope_600SemiBold',
+      fontSize: 20,
       fontWeight: '500' as const,
       letterSpacing: 0,
-      lineHeight: 28,       // calc(1.75 / 1.25) from Figma
+      lineHeight: 28,
     },
-    
+
     // Body text
     body: {
-      fontSize: 16,         // text-base (1rem) - Primary body text
-      fontWeight: '400' as const, // --font-weight-normal
+      fontFamily: 'Manrope_400Regular',
+      fontSize: 16,
+      fontWeight: '400' as const,
       letterSpacing: 0,
-      lineHeight: 24,       // 1.5 ratio (var(--text-base--line-height))
+      lineHeight: 24,
     },
     bodySmall: {
-      fontSize: 14,         // text-sm (.875rem) - Labels, secondary text
+      fontFamily: 'Manrope_400Regular',
+      fontSize: 14,
       fontWeight: '400' as const,
       letterSpacing: 0,
-      lineHeight: 20,       // calc(1.25 / .875) from Figma
+      lineHeight: 20,
     },
     bodyXSmall: {
-      fontSize: 12,         // text-xs (.75rem) - Captions, helper text
+      fontFamily: 'Manrope_400Regular',
+      fontSize: 12,
       fontWeight: '400' as const,
       letterSpacing: 0,
-      lineHeight: 16,       // calc(1 / .75) from Figma
+      lineHeight: 16,
     },
-    
+
     // UI text
     button: {
-      fontSize: 16,         // text-base - Button text
-      fontWeight: '500' as const, // Medium weight for buttons
+      fontFamily: 'Manrope_700Bold',
+      fontSize: 16,
+      fontWeight: '500' as const,
       letterSpacing: 0,
-      lineHeight: 24,       // 1.5 ratio
+      lineHeight: 24,
     },
     caption: {
-      fontSize: 12,         // text-xs
+      fontFamily: 'Manrope_400Regular',
+      fontSize: 12,
       fontWeight: '400' as const,
       letterSpacing: 0,
       lineHeight: 16,
     },
     label: {
-      fontSize: 14,         // text-sm
+      fontFamily: 'Manrope_600SemiBold',
+      fontSize: 14,
       fontWeight: '500' as const,
       letterSpacing: 0,
       lineHeight: 20,
+    },
+    // Eyebrow — 10–11/700/.16em caps
+    eyebrow: {
+      fontFamily: 'Manrope_700Bold',
+      fontSize: 11,
+      fontWeight: '700' as const,
+      letterSpacing: 1.6,
+      lineHeight: 14,
     },
   },
   
@@ -186,15 +241,17 @@ export const MusiStashTheme = {
     24: 96,        // calc(var(--spacing) * 24)
   },
   
-  // Border radius scale - From Figma (--radius: 0.625rem = 10px)
+  // Border radius scale — "Paper Mobile": cards 14–18, sheets 24, pills 999
   borderRadius: {
     none: 0,
-    sm: 6,         // rounded-md: calc(var(--radius) - 2px) ≈ 8px (BUT Figma uses 6)
-    md: 8,         // rounded-lg: var(--radius) = 10px (BUT Figma shows 8)
-    lg: 10,        // var(--radius) base = 10px
-    xl: 14,        // rounded-xl: calc(var(--radius) + 4px) = 14px (Figma h-14 inputs)
-    xxl: 24,
-    full: 9999,    // rounded-full for circular elements
+    sm: 8,
+    md: 12,
+    lg: 14,
+    card: 14,
+    xl: 16,
+    xxl: 20,
+    sheet: 24,
+    full: 9999,
   },
   
   // Shadow definitions
@@ -248,116 +305,115 @@ export const MusiStashTheme = {
         borderRadius: 14,
       },
       accent: {
-        // Violet brand gradient
-        backgroundColor: '#8B5CF6',  // Violet-500 (gradient start)
-        gradientColors: ['#8B5CF6', '#7C3AED'], // violet-500 to violet-600
+        backgroundColor: '#4B9CD3', // Paper blue
+        gradientColors: ['#4B9CD3', '#4B9CD3'], // flat — no gradients
         borderColor: 'transparent',
-        textColor: '#FFFFFF',
-        height: 56,
-        borderRadius: 9999,          // rounded-full for gradient buttons
+        textColor: '#0A0A0C',       // ink on accent, never white
+        height: 54,
+        borderRadius: 16,
       },
       ghost: {
         backgroundColor: 'transparent',
         borderColor: 'transparent',
-        textColor: '#FCFCFD',
-        height: 56,
-        borderRadius: 14,
+        textColor: '#F4F4F6',
+        height: 54,
+        borderRadius: 16,
       },
     },
-    
+
     // Card styles
     card: {
-      backgroundColor: '#121216',    // Elevated dark card
-      borderColor: '#454648',        // Muted border
-      borderRadius: 10,              // rounded-lg
+      backgroundColor: '#15151A',
+      borderColor: '#26262D',
+      borderRadius: 14,
       shadowColor: '#000',
       shadowOffset: { width: 0, height: 2 },
       shadowOpacity: 0.1,
       shadowRadius: 4,
       elevation: 3,
     },
-    
-    // Input styles (MusiStash brand)
+
+    // Input styles
     input: {
-      backgroundColor: 'transparent', // Transparent in Figma
-      borderColor: '#8B5CF6',         // Violet border when active
-      borderColorIdle: '#6B7280',     // Gray border when idle
-      borderColorFocus: '#A78BFA',    // Brighter violet on focus
-      borderWidth: 2,                 // border-2 in Figma
-      textColor: '#FFFFFF',
-      placeholderColor: '#6B7280',    // gray-500
-      height: 56,                     // h-14
-      borderRadius: 14,               // rounded-xl
-      fontSize: 16,
+      backgroundColor: '#15151A',
+      borderColor: '#4B9CD3',         // accent border when active
+      borderColorIdle: '#26262D',
+      borderColorFocus: '#4B9CD3',
+      borderWidth: 1,
+      textColor: '#F4F4F6',
+      placeholderColor: '#6A6A74',
+      height: 50,
+      borderRadius: 12,
+      fontSize: 15,
     },
-    
+
     // Navigation styles
     navigation: {
-      backgroundColor: '#070709',
-      borderColor: '#454648',         // Muted border
-      activeColor: '#FCFCFD',         // White for active
-      inactiveColor: '#6B7280',       // Gray for inactive
-      textColor: '#FCFCFD',
+      backgroundColor: '#0C0C0F',
+      borderColor: '#1C1C22',
+      activeColor: '#8ECDF0',
+      inactiveColor: '#6A6A74',
+      textColor: '#F4F4F6',
     },
-    
-    // Progress bar (MusiStash brand)
+
+    // Progress bar
     progress: {
-      backgroundColor: '#454648',     // gray-800
-      fillColor: '#8B5CF6',           // Violet fill
-      gradientColors: ['#A78BFA', '#8B5CF6'], // violet-400 to violet-500
-      height: 4,                      // h-1
+      backgroundColor: '#26262D',
+      fillColor: '#4B9CD3',
+      gradientColors: ['#4B9CD3', '#4B9CD3'], // flat
+      height: 6,
     },
-    
+
     // Input OTP (verification code inputs)
     inputOTP: {
-      slotWidth: 64,                  // w-16
-      slotHeight: 64,                 // h-16
-      borderColor: '#8B5CF6',         // Violet for first input
-      borderColorInactive: '#6B7280', // Gray for others
-      borderWidth: 2,
-      borderRadius: 14,               // rounded-xl
-      fontSize: 24,                   // text-2xl
-      textColor: '#FFFFFF',
+      slotWidth: 56,
+      slotHeight: 56,
+      borderColor: '#4B9CD3',
+      borderColorInactive: '#26262D',
+      borderWidth: 1,
+      borderRadius: 12,
+      fontSize: 22,
+      textColor: '#F4F4F6',
     },
   },
 };
 
-// Gradient definitions for use with LinearGradient - MusiStash Brand (violet)
+// Kept for LinearGradient call sites — every pair is now flat (design: no
+// gradients). Passing these to <LinearGradient> renders a solid fill.
 export const MusiStashGradients = {
-  // Landing page gradient (MusiStash violet)
-  landing: ['#8B5CF6', '#7C3AED', '#A78BFA'] as const,
-  
-  // Progress bar gradient (violet-500 → violet-400)
-  progress: ['#8B5CF6', '#A78BFA'] as const,
-  
-  // Button gradients (MusiStash brand)
-  buttonPrimary: ['#8B5CF6', '#7C3AED'] as const,
-  buttonArtist: ['#8B5CF6', '#A78BFA'] as const,
-  buttonService: ['#8B5CF6', '#7C3AED'] as const,
-  
-  // Accent gradient (violet for active states)
-  accent: ['#A78BFA', '#8B5CF6'] as const,
-  
-  // Payment gradient (green - only for payment-related UI)
-  payment: ['#34D399', '#10B981'] as const, // from-emerald-400 to-emerald-500
-  
-  // Profile gradient border
-  profileBorder: ['#8B5CF6', '#A78BFA', '#8B5CF6'] as const,
-  
-  // Dark background gradients
-  dark: ['#070709', '#070709'] as const,
-  darkSubtle: ['#070709', '#121216'] as const,
-  
+  landing: ['#4B9CD3', '#4B9CD3', '#4B9CD3'] as const,
+  progress: ['#4B9CD3', '#4B9CD3'] as const,
+  buttonPrimary: ['#4B9CD3', '#4B9CD3'] as const,
+  buttonArtist: ['#4B9CD3', '#4B9CD3'] as const,
+  buttonService: ['#4B9CD3', '#4B9CD3'] as const,
+  accent: ['#4B9CD3', '#4B9CD3'] as const,
+  payment: ['#4B9CD3', '#4B9CD3'] as const,
+  profileBorder: ['#4B9CD3', '#8ECDF0', '#4B9CD3'] as const,
+  dark: ['#0A0A0C', '#0A0A0C'] as const,
+  darkSubtle: ['#0A0A0C', '#15151A'] as const,
+
   // Overlay gradients
   overlay: ['rgba(0,0,0,0)', 'rgba(0,0,0,0.8)'] as const,
   overlayStrong: ['rgba(0,0,0,0)', 'rgba(0,0,0,0.95)'] as const,
   
-  // Brand gradients (keys retained for compat; values are violet)
-  blue: ['#8B5CF6', '#A78BFA'] as const,
-  blueDark: ['#7C3AED', '#8B5CF6'] as const,
-  violet: ['#8B5CF6', '#A78BFA'] as const,
-  violetDark: ['#7C3AED', '#8B5CF6'] as const,
+  // Brand gradients (keys retained for compat; flattened to blue)
+  blue: ['#4B9CD3', '#4B9CD3'] as const,
+  blueDark: ['#357FB0', '#4B9CD3'] as const,
+  violet: ['#4B9CD3', '#4B9CD3'] as const,
+  violetDark: ['#357FB0', '#4B9CD3'] as const,
 };
+
+/** Manrope family name for a numeric weight (for inline styles). */
+export const font = (
+  weight: 400 | 500 | 600 | 700 | 800 = 400,
+): string =>
+  ({
+    400: 'Manrope_400Regular',
+    500: 'Manrope_500Medium',
+    600: 'Manrope_600SemiBold',
+    700: 'Manrope_700Bold',
+    800: 'Manrope_800ExtraBold',
+  }[weight]);
 
 // Helper function to create consistent styles - Updated for Figma Design
 export const createMusiStashStyles = (theme = MusiStashTheme) => ({
