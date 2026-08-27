@@ -256,7 +256,7 @@ export default function ProjectDetailScreen({
     } catch (err) {
       const message =
         err instanceof Error ? err.message : 'Unable to open paper position';
-      Alert.alert('Paper backing failed', message);
+      Alert.alert('Could not back project', message);
     } finally {
       setIsSubmitting(false);
     }

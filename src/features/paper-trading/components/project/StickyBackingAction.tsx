@@ -33,10 +33,10 @@ export function StickyBackingAction({
         onPress={onPress}
         disabled={disabled}
         accessibilityRole="button"
-        accessibilityLabel={`Paper Back ${formatMoney(amount)}`}
+        accessibilityLabel={`Back ${formatMoney(amount)}`}
         accessibilityState={{ disabled }}
       >
-        <Text style={styles.btnText}>Paper Back {formatMoney(amount)}</Text>
+        <Text style={styles.btnText}>Back {formatMoney(amount)}</Text>
       </TouchableOpacity>
     </View>
   );

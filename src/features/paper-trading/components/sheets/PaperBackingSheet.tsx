@@ -75,14 +75,14 @@ export function PaperBackingSheet({
 
   if (success) {
     return (
-      <BottomSheetFrame visible={visible} title="Paper backed" onClose={onClose}>
+      <BottomSheetFrame visible={visible} title="Position opened" onClose={onClose}>
         <View style={styles.successBlock} accessibilityLabel="Paper backing successful">
           <View style={styles.checkCircle}>
             <Ionicons name="checkmark" size={36} color={c.onAccent} />
           </View>
-          <Text style={styles.successTitle}>You're paper backed</Text>
+          <Text style={styles.successTitle}>Position opened</Text>
           <Text style={styles.successBody}>
-            {formatMoney(selectedAmount)} simulated toward {project.title}
+            {formatMoney(selectedAmount)} in {project.title}
           </Text>
           <TouchableOpacity
             style={styles.primaryBtn}
@@ -98,7 +98,7 @@ export function PaperBackingSheet({
   }
 
   return (
-    <BottomSheetFrame visible={visible} title="Paper back" onClose={onClose}>
+    <BottomSheetFrame visible={visible} title="Back project" onClose={onClose}>
       <Text style={styles.badge}>{PAPER_DISCLOSURE_SHORT}</Text>
 
       <View style={styles.projectRow}>
@@ -111,8 +111,8 @@ export function PaperBackingSheet({
       </View>
 
       {paperBalance != null ? (
-        <Text style={styles.balance} accessibilityLabel={`Paper balance ${formatMoney(paperBalance)}`}>
-          Paper balance · {formatMoney(paperBalance)}
+        <Text style={styles.balance} accessibilityLabel={`MusiStash Cash ${formatMoney(paperBalance)}`}>
+          MusiStash Cash · {formatMoney(paperBalance)}
         </Text>
       ) : null}
 

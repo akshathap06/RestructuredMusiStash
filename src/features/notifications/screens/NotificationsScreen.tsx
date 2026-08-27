@@ -97,8 +97,17 @@ export const NotificationsScreen: React.FC = () => {
 
   const getNotificationIcon = (type: string) => {
     switch (type) {
+      case 'invest_completed':
       case 'paper_backed':
         return { name: 'trending-up', color: c.accentLight };
+      case 'project_funded':
+        return { name: 'flag', color: c.accentSolid };
+      case 'project_settled':
+        return { name: 'checkmark-circle', color: c.accentSolid };
+      case 'project_failed':
+        return { name: 'close-circle', color: c.negative };
+      case 'position_sold':
+        return { name: 'swap-horizontal', color: c.accentLight };
       case 'project_update':
       case 'project_milestone':
         return { name: 'flag', color: c.accentLight };

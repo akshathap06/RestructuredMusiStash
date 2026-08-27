@@ -131,7 +131,7 @@ export default function ExploreScreen(props: any) {
         </View>
         {buyingPower != null && (
           <View style={styles.bp}>
-            <AppText variant="eyebrow" color={c.textFaint}>BUYING POWER</AppText>
+            <AppText variant="eyebrow" color={c.textFaint}>MUSISTASH CASH</AppText>
             <AppText variant="h4" tabular style={styles.bpValue}>
               {money(buyingPower)}
             </AppText>
@@ -190,7 +190,7 @@ export default function ExploreScreen(props: any) {
             </View>
             <View style={styles.featureMeta}>
               <AppText variant="bodySmall" color={c.textMuted}>
-                {`${featured.paperBackerCount} paper backers`}
+                {`${featured.paperBackerCount} backers`}
               </AppText>
               {featured.aiScore != null && (
                 <AppText variant="bodySmall" color={c.textMuted}>
@@ -290,7 +290,7 @@ export default function ExploreScreen(props: any) {
         style={styles.cta}
         onPress={becomeArtist}
         accessibilityRole="button"
-        accessibilityLabel="You're an artist? Put a project up for paper backing"
+        accessibilityLabel="You're an artist? Put a project up for backing"
       >
         <View style={styles.ctaIcon}>
           <Ionicons name="add" size={20} color={c.accentLight} />
@@ -298,7 +298,7 @@ export default function ExploreScreen(props: any) {
         <View style={{ flex: 1 }}>
           <AppText variant="h4">You&apos;re an artist?</AppText>
           <AppText variant="bodySmall" color={c.textMuted}>
-            Put a project up for paper backing
+            Put a project up for backing
           </AppText>
         </View>
         <Ionicons name="chevron-forward" size={18} color={c.textFaint} />

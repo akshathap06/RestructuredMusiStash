@@ -37,8 +37,8 @@ export function FundingSummary({
 
   const backersLabel =
     paperBackerCount === 1
-      ? '1 paper backer'
-      : `${paperBackerCount.toLocaleString()} paper backers`;
+      ? '1 backer'
+      : `${paperBackerCount.toLocaleString()} backers`;
   const daysLabel =
     daysRemaining === 1 ? '1 day left' : `${daysRemaining} days left`;
 

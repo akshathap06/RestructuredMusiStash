@@ -118,7 +118,7 @@ export default function CreateArtistProjectScreen() {
       >
         <Eyebrow color={c.accentSolid}>ARTIST TOOLS</Eyebrow>
         <AppText variant="h1" style={styles.h1}>
-          Put a project up for paper backing
+          Put a project up for backing
         </AppText>
         <Text style={styles.disclaimer}>{PAPER_DISCLOSURE_BODY}</Text>
 
