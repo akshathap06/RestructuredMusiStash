@@ -155,8 +155,9 @@ export class ArtistAccountService {
           bio: artistData.bio,
           biography: artistData.biography,
           genre: artistData.genre,
-          profile_photo: artistData.profile_photo,
-          banner_photo: artistData.banner_photo,
+          // Legacy base64 columns were purged from prod (49MB) — always write URLs.
+          profile_photo_url: artistData.profile_photo,
+          banner_photo_url: artistData.banner_photo,
           is_band: artistData.is_band || false,
           band_type: artistData.band_type,
           location: artistData.location,

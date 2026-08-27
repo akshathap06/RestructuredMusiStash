@@ -6,46 +6,34 @@ import {
   FlatList,
   RefreshControl,
   TouchableOpacity,
-  Image,
   Dimensions,
   Alert,
   SafeAreaView,
   ActivityIndicator,
-  ScrollView,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Audio } from 'expo-av';
 import { useAuth } from '../../../contexts/AuthContext';
 import { postsService, Post as PostType } from '../../../services/postsService';
-import serviceProviderService, { ServiceProviderProfile } from '../../../services/serviceProviderService';
 import ProfilePicture from '../../../components/ProfilePicture';
 import CommentModal from '../../../components/CommentModal';
 import AutoplayVideo from '../../../components/AutoplayVideo';
 import AnimatedAudioBubble from '../../../components/audio/AnimatedAudioBubble';
-import { supabase } from '../../../lib/supabase';
 import ReportBlockModal from '../../../components/ReportBlockModal';
 import { moderationService } from '../../../services/moderationService';
 import AdaptiveImage from '../../../components/AdaptiveImage';
 
 const { width } = Dimensions.get('window');
 
-interface ServicePost extends ServiceProviderProfile {
-  posts?: any[];
-}
-
 export default function PostsScreen({ navigation, route }: any) {
   const { user } = useAuth();
   const updatedPostData = route?.params?.updatedPost;
-  const [activeTab, setActiveTab] = useState<'posts' | 'services'>('posts');
   const [posts, setPosts] = useState<PostType[]>([]);
-  const [servicePosts, setServicePosts] = useState<ServicePost[]>([]);
   const [refreshing, setRefreshing] = useState(false);
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   const [hasMorePosts, setHasMorePosts] = useState(true);
-  const [hasMoreServicePosts, setHasMoreServicePosts] = useState(true);
   const [postsOffset, setPostsOffset] = useState(0);
-  const [servicePostsOffset, setServicePostsOffset] = useState(0);
   const POSTS_PER_PAGE = 10;
   const [commentModalVisible, setCommentModalVisible] = useState(false);
   const [selectedPostId, setSelectedPostId] = useState<string>('');
@@ -169,16 +157,12 @@ export default function PostsScreen({ navigation, route }: any) {
 
   useEffect(() => {
     loadContent();
-  }, [activeTab]);
+  }, []);
 
   const loadContent = async () => {
     try {
       setLoading(true);
-      if (activeTab === 'posts') {
-        await loadPosts();
-      } else {
-        await loadServicePosts();
-      }
+      await loadPosts();
     } catch (error) {
       console.error('Error loading content:', error);
     } finally {
@@ -216,103 +200,11 @@ export default function PostsScreen({ navigation, route }: any) {
     }
   };
 
-  const loadServicePosts = async (isLoadMore = false) => {
-    try {
-      const offset = isLoadMore ? servicePostsOffset : 0;
-      
-      // Get blocked users list
-      const blockedUsers = user ? await moderationService.getBlockedUsers(user.id) : [];
-      
-      // Load actual service_offer posts from the database with pagination
-      const { data: servicePostsData, error } = await supabase
-        .from('posts')
-        .select(`
-          *,
-          users!posts_user_id_fkey (
-            name,
-            avatar
-          )
-        `)
-        .eq('post_type', 'service_offer')
-        .eq('is_active', true)
-        .eq('post_status', 'approved')
-        .order('created_at', { ascending: false })
-        .range(offset, offset + POSTS_PER_PAGE - 1);
-
-      if (error) {
-        console.error('Error loading service posts:', error);
-        setServicePosts([]);
-        return;
-      }
-      
-      // Filter out posts from blocked users
-      const filteredServicePosts = (servicePostsData || []).filter(
-        (post: any) => !blockedUsers.includes(post.user_id)
-      );
-
-      // Transform posts to include service provider business name
-      // CRITICAL: Use service_provider.id, not post.id, for navigation
-      const servicePostsWithProvider = await Promise.all(
-        filteredServicePosts.map(async (post: any) => {
-          // Get service provider info for business name AND correct ID
-          const { data: serviceProvider } = await supabase
-            .from('service_providers')
-            .select('id, business_name, profile_photo, location, tagline, bio, provider_type, genres, specializations, years_of_experience, base_price, currency, accepts_remote_work, available_for_hire, is_verified, status')
-            .eq('user_id', post.user_id)
-            .eq('status', 'approved')
-            .single();
-
-          return {
-            // IMPORTANT: Use service_provider.id as the main id for booking
-            id: serviceProvider?.id || post.id, // Service provider ID for correct booking
-            post_id: post.id, // Keep reference to the original post
-            user_id: post.user_id,
-            title: post.title,
-            description: post.description,
-            media_urls: post.media_urls || [],
-            created_at: post.created_at,
-            business_name: serviceProvider?.business_name || post.users?.name || 'Service Provider',
-            profile_photo: serviceProvider?.profile_photo || post.users?.avatar,
-            location: serviceProvider?.location || '',
-            tagline: serviceProvider?.tagline || post.description || '',
-            bio: serviceProvider?.bio || '',
-            provider_type: serviceProvider?.provider_type || 'producer',
-            genres: serviceProvider?.genres || [],
-            specializations: serviceProvider?.specializations || [],
-            years_of_experience: serviceProvider?.years_of_experience || 0,
-            base_price: serviceProvider?.base_price || post.content?.service_info?.price_min || 0,
-            currency: serviceProvider?.currency || 'USD',
-            accepts_remote_work: serviceProvider?.accepts_remote_work ?? true,
-            available_for_hire: serviceProvider?.available_for_hire ?? true,
-            is_verified: serviceProvider?.is_verified ?? false,
-            status: serviceProvider?.status || 'approved',
-            service_info: post.content?.service_info || {},
-          };
-        })
-      );
-
-      if (isLoadMore) {
-        setServicePosts(prev => [...prev, ...servicePostsWithProvider]);
-      } else {
-        setServicePosts(servicePostsWithProvider);
-      }
-      
-      // Check if there are more service posts to load
-      setHasMoreServicePosts(servicePostsWithProvider.length >= POSTS_PER_PAGE);
-      setServicePostsOffset(offset + servicePostsWithProvider.length);
-    } catch (error) {
-      console.error('Error loading service posts:', error);
-      if (!isLoadMore) setServicePosts([]);
-    }
-  };
-
   const onRefresh = async () => {
     setRefreshing(true);
     // Reset pagination state
     setPostsOffset(0);
-    setServicePostsOffset(0);
     setHasMorePosts(true);
-    setHasMoreServicePosts(true);
     await loadContent();
     setRefreshing(false);
   };
@@ -320,17 +212,11 @@ export default function PostsScreen({ navigation, route }: any) {
   // Load more posts when reaching the end
   const handleLoadMore = async () => {
     if (loadingMore) return;
-    
-    const hasMore = activeTab === 'posts' ? hasMorePosts : hasMoreServicePosts;
-    if (!hasMore) return;
+    if (!hasMorePosts) return;
     
     setLoadingMore(true);
     try {
-      if (activeTab === 'posts') {
-        await loadPosts(true);
-      } else {
-        await loadServicePosts(true);
-      }
+      await loadPosts(true);
     } catch (error) {
       console.error('Error loading more posts:', error);
     } finally {
@@ -391,22 +277,6 @@ export default function PostsScreen({ navigation, route }: any) {
   const handleUserBlocked = (blockedUserId: string) => {
     // Remove all posts from the blocked user
     setPosts(prevPosts => prevPosts.filter(post => post.user_id !== blockedUserId));
-    setServicePosts(prevPosts => prevPosts.filter(post => post.user_id !== blockedUserId));
-  };
-
-  const handleServicePress = (provider: ServicePost) => {
-    navigation.navigate('ServiceProviderDetail', { provider });
-  };
-
-  const handleViewServices = (provider: ServicePost) => {
-    navigation.navigate('ServiceProviderDetail', { 
-      provider,
-      initialTab: 'services'
-    });
-  };
-
-  const handleMessage = (provider: ServicePost) => {
-    navigation.navigate('ContactServiceProvider', { provider });
   };
 
   // Render regular post
@@ -528,203 +398,6 @@ export default function PostsScreen({ navigation, route }: any) {
     </View>
   );
 
-  // Render service post
-  const renderServicePost = ({ item }: { item: any }) => {
-    const serviceInfo = item.service_info || item.content?.service_info || {};
-    const pricingType = serviceInfo.pricing_type || serviceInfo.price_type || 'flat';
-    
-    // Debug: log service info to verify data
-    console.log('🔍 Service Post Debug:', {
-      title: item.title,
-      serviceInfo,
-      pricingType,
-      price_min: serviceInfo.price_min,
-      price_max: serviceInfo.price_max,
-      price_custom: serviceInfo.price_custom,
-    });
-    
-    // Format pricing based on type - check multiple price fields with proper null checks
-    // Use Number() to ensure we get a number, and check explicitly for null/undefined
-    const priceMin = serviceInfo.price_min !== null && serviceInfo.price_min !== undefined 
-      ? Number(serviceInfo.price_min) 
-      : null;
-    const priceMax = serviceInfo.price_max !== null && serviceInfo.price_max !== undefined 
-      ? Number(serviceInfo.price_max) 
-      : null;
-    const basePrice = item.base_price !== null && item.base_price !== undefined 
-      ? Number(item.base_price) 
-      : null;
-    
-    // Determine the price to display - prefer post's service_info prices over provider's base_price
-    let priceDisplay = 'Contact for pricing';
-    
-    if (pricingType === 'custom' && serviceInfo.price_custom) {
-      // Custom pricing text takes priority
-      priceDisplay = serviceInfo.price_custom;
-    } else if (pricingType === 'range' && priceMin !== null && priceMax !== null) {
-      // Range pricing
-      priceDisplay = `$${priceMin} - $${priceMax}`;
-    } else if (pricingType === 'hourly' || pricingType === 'per_hour') {
-      // Hourly pricing
-      const hourlyPrice = priceMin ?? basePrice;
-      if (hourlyPrice !== null && hourlyPrice > 0) {
-        priceDisplay = `$${hourlyPrice}/hour`;
-      }
-    } else {
-      // Flat rate or default - use the first available price
-      const flatPrice = priceMin ?? basePrice;
-      if (flatPrice !== null && flatPrice > 0) {
-        priceDisplay = `$${flatPrice}`;
-      }
-    }
-    
-    // Format date
-    const postDate = new Date(item.created_at);
-    const timeAgo = getTimeAgo(postDate);
-    
-    return (
-      <View style={styles.serviceCard}>
-        {/* Business Header */}
-        <View style={styles.postHeader}>
-          <View style={styles.postHeaderLeft}>
-            {item.profile_photo ? (
-              <Image source={{ uri: item.profile_photo }} style={styles.avatar} />
-            ) : (
-              <View style={styles.serviceAvatar}>
-                <Ionicons name="briefcase" size={20} color="#3B82F6" />
-              </View>
-            )}
-            <View style={styles.userInfo}>
-              <Text style={styles.userName}>{item.business_name || 'Service Provider'}</Text>
-              <Text style={styles.timestamp}>{timeAgo}</Text>
-            </View>
-          </View>
-          {/* Options Menu - Only show for other users' service posts */}
-          {user?.id !== item.user_id && (
-            <TouchableOpacity 
-              style={styles.postOptionsButton}
-              onPress={() => handlePostOptions(item as any)}
-            >
-              <Ionicons name="ellipsis-horizontal" size={20} color="#9CA3AF" />
-            </TouchableOpacity>
-          )}
-        </View>
-
-        {/* Service Media - Show all attachments */}
-        {item.media_urls && item.media_urls.length > 0 && (() => {
-          const mediaUrl = item.media_urls[0];
-          const isVideo = mediaUrl.includes('.mp4') || mediaUrl.includes('.mov') || mediaUrl.includes('.avi') || mediaUrl.includes('.m4v');
-          const isAudio = mediaUrl.includes('.mp3') || mediaUrl.includes('.wav') || mediaUrl.includes('.m4a') || mediaUrl.includes('.aac');
-          const mediaDimensions = item.content?.media_dimensions?.[0];
-          
-          if (isVideo) {
-            return (
-              <View style={styles.videoPostContainer}>
-                <TouchableOpacity style={styles.videoPreview} onPress={() => navigation.navigate('PostDetail', { postId: item.id, post: item, sourceScreen: 'Posts' })}>
-                  <View style={styles.videoOverlay}>
-                    <Ionicons name="play-circle" size={48} color="#FFFFFF" />
-                  </View>
-                </TouchableOpacity>
-              </View>
-            );
-          } else if (isAudio) {
-            return (
-              <View style={styles.audioPostContainer}>
-                <View style={styles.audioPreviewContainer}>
-                  <AnimatedAudioBubble
-                    isPlaying={currentlyPlayingId === item.id}
-                    isLoading={isAudioLoading && currentlyPlayingId === item.id}
-                    onPress={() => handleAudioPlayback(item.media_urls[0], item.id)}
-                    label={currentlyPlayingId === item.id ? 'Now Playing' : 'Audio Track'}
-                    size={180}
-                    primaryColor="#32D5FF"
-                    progress={currentlyPlayingId === item.id ? playbackStatus.progress : 0}
-                    duration={currentlyPlayingId === item.id ? playbackStatus.duration : 0}
-                    currentTime={currentlyPlayingId === item.id ? playbackStatus.position : 0}
-                    onSeek={currentlyPlayingId === item.id ? handleSeek : undefined}
-                    showProgressBar={true}
-                  />
-                </View>
-              </View>
-            );
-          } else {
-            return (
-              <TouchableOpacity onPress={() => navigation.navigate('PostDetail', { postId: item.id, post: item, sourceScreen: 'Posts' })}>
-                <AdaptiveImage
-                  uri={mediaUrl}
-                  imageWidth={mediaDimensions?.width}
-                  imageHeight={mediaDimensions?.height}
-                />
-              </TouchableOpacity>
-            );
-          }
-        })()}
-
-        {/* Service Details */}
-        <View style={styles.serviceDetails}>
-          <Text style={styles.serviceName}>{item.title || item.description || 'Service Listing'}</Text>
-          
-          {item.description && (
-            <Text style={styles.serviceDescription} numberOfLines={2}>
-              {item.description}
-            </Text>
-          )}
-          
-          {item.location && (
-            <View style={styles.serviceLocation}>
-              <Ionicons name="location" size={16} color="#9CA3AF" />
-              <Text style={styles.locationText}>{item.location}</Text>
-            </View>
-          )}
-
-          <View style={styles.servicePricing}>
-            <View>
-              <Text style={styles.priceLabel}>Price</Text>
-              <Text style={styles.priceValue}>{priceDisplay}</Text>
-            </View>
-            {serviceInfo.delivery_days && (
-              <View>
-                <Text style={styles.priceLabel}>Delivery</Text>
-                <Text style={styles.priceValue}>{serviceInfo.delivery_days} days</Text>
-              </View>
-            )}
-          </View>
-
-          {/* Action Buttons */}
-          <View style={styles.serviceActions}>
-            <TouchableOpacity 
-              style={styles.messageButton}
-              onPress={() => handleMessage(item)}
-            >
-              <Ionicons name="chatbubble" size={18} color="#FFFFFF" />
-              <Text style={styles.messageButtonText}>Message</Text>
-            </TouchableOpacity>
-            
-            <TouchableOpacity 
-              style={styles.viewServicesButton}
-              onPress={() => handleViewServices(item)}
-            >
-              <Ionicons name="eye" size={18} color="#000000" />
-              <Text style={styles.viewServicesButtonText}>View Service</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </View>
-    );
-  };
-  
-  const getTimeAgo = (date: Date): string => {
-    const seconds = Math.floor((new Date().getTime() - date.getTime()) / 1000);
-    if (seconds < 60) return 'just now';
-    const minutes = Math.floor(seconds / 60);
-    if (minutes < 60) return `${minutes}m ago`;
-    const hours = Math.floor(minutes / 60);
-    if (hours < 24) return `${hours}h ago`;
-    const days = Math.floor(hours / 24);
-    if (days < 7) return `${days}d ago`;
-    return date.toLocaleDateString();
-  };
-
   if (loading) {
     return (
       <SafeAreaView style={styles.container}>
@@ -737,32 +410,11 @@ export default function PostsScreen({ navigation, route }: any) {
 
   return (
     <SafeAreaView style={styles.container}>
-      {/* Tab Switcher */}
-      <View style={styles.tabContainer}>
-        <TouchableOpacity 
-          style={[styles.tab, activeTab === 'posts' && styles.tabActive]}
-          onPress={() => setActiveTab('posts')}
-        >
-          <Text style={[styles.tabText, activeTab === 'posts' && styles.tabTextActive]}>
-            Posts
-          </Text>
-        </TouchableOpacity>
-        
-        <TouchableOpacity 
-          style={[styles.tab, activeTab === 'services' && styles.tabActive]}
-          onPress={() => setActiveTab('services')}
-        >
-          <Text style={[styles.tabText, activeTab === 'services' && styles.tabTextActive]}>
-            Service Posts
-          </Text>
-        </TouchableOpacity>
-      </View>
-
       {/* Content */}
       <FlatList
-        data={activeTab === 'posts' ? posts : servicePosts}
-        renderItem={activeTab === 'posts' ? renderPost : renderServicePost}
-        keyExtractor={(item, index) => `${activeTab}-${item.id || index}`}
+        data={posts}
+        renderItem={renderPost}
+        keyExtractor={(item, index) => `posts-${item.id || index}`}
         contentContainerStyle={styles.listContainer}
         refreshControl={
           <RefreshControl
@@ -785,17 +437,13 @@ export default function PostsScreen({ navigation, route }: any) {
         ListEmptyComponent={
           <View style={styles.emptyContainer}>
             <Ionicons 
-              name={activeTab === 'posts' ? "musical-notes-outline" : "briefcase-outline"} 
+              name="musical-notes-outline" 
               size={64} 
               color="#6B7280" 
             />
-            <Text style={styles.emptyText}>
-              {activeTab === 'posts' ? 'No posts yet' : 'No service posts yet'}
-            </Text>
+            <Text style={styles.emptyText}>No posts yet</Text>
             <Text style={styles.emptySubtext}>
-              {activeTab === 'posts' 
-                ? 'Follow some artists to see their posts here' 
-                : 'Check back later for service providers'}
+              Follow some artists to see their posts here
             </Text>
           </View>
         }
@@ -838,33 +486,6 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-  },
-  
-  // Tab Switcher
-  tabContainer: {
-    flexDirection: 'row',
-    borderBottomWidth: 0.5,
-    borderBottomColor: '#262626',
-    paddingHorizontal: 16,
-  },
-  tab: {
-    flex: 1,
-    paddingVertical: 16,
-    alignItems: 'center',
-    borderBottomWidth: 2,
-    borderBottomColor: 'transparent',
-  },
-  tabActive: {
-    borderBottomColor: '#FFFFFF',
-  },
-  tabText: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: '#6B7280',
-  },
-  tabTextActive: {
-    color: '#FFFFFF',
-    fontWeight: '600',
   },
   
   // List Container
@@ -972,11 +593,6 @@ const styles = StyleSheet.create({
     color: '#9CA3AF',
     fontWeight: '500',
   },
-  avatar: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-  },
   
   // Post Actions
   postActions: {
@@ -1010,102 +626,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#FFFFFF',
     flex: 1,
-  },
-  
-  // Service Card
-  serviceCard: {
-    backgroundColor: '#000000',
-    borderBottomWidth: 0.5,
-    borderBottomColor: '#262626',
-    paddingBottom: 16,
-  },
-  serviceAvatar: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: 'rgba(139, 92, 246, 0.2)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  
-  // Service Details
-  serviceDetails: {
-    paddingHorizontal: 12,
-    paddingTop: 12,
-  },
-  serviceName: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#FFFFFF',
-    marginBottom: 8,
-  },
-  serviceDescription: {
-    fontSize: 14,
-    color: '#9CA3AF',
-    marginBottom: 12,
-  },
-  serviceLocation: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 12,
-    gap: 4,
-  },
-  locationText: {
-    fontSize: 14,
-    color: '#9CA3AF',
-  },
-  servicePricing: {
-    flexDirection: 'row',
-    gap: 24,
-    marginBottom: 16,
-  },
-  priceLabel: {
-    fontSize: 12,
-    color: '#6B7280',
-    marginBottom: 4,
-  },
-  priceValue: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#FFFFFF',
-  },
-  
-  // Service Actions
-  serviceActions: {
-    flexDirection: 'row',
-    gap: 12,
-  },
-  messageButton: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    paddingVertical: 12,
-    borderRadius: 8,
-    backgroundColor: 'transparent',
-    borderWidth: 1,
-    borderColor: '#374151',
-  },
-  messageButtonText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#FFFFFF',
-  },
-  viewServicesButton: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    paddingVertical: 12,
-    borderRadius: 8,
-    backgroundColor: '#FFFFFF',
-  },
-  viewServicesButtonText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#000000',
   },
   
   // Empty State

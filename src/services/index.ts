@@ -1,69 +1,36 @@
 // ============================================
 // SERVICES INDEX - Re-exports for backward compatibility
 // ============================================
-// This file maintains compatibility with old import paths
-// Services are now organized by feature in src/features/
+// Services are organized by feature in src/features/. Prefer importing from
+// the feature directly; these re-exports exist for older import paths.
 
-// Auth Services
+// Auth
 export * from '../features/auth/services/authService';
 export * from '../features/auth/services/emailVerificationService';
 export * from '../features/auth/services/twilioVerificationService';
 
-// Profile Services
+// Profile
 export * from '../features/profile/services/productionProfileService';
 export * from '../features/profile/services/optimizedProfileService';
 export { default as ProfilePictureService } from '../features/profile/services/profilePictureService';
 
-// Artist Services
+// Artists
 export * from '../features/artists/services/approvedArtistsService';
 export * from '../features/artists/services/artistAccountService';
 
-// Service Provider Services
-export * from '../features/service-providers/services/serviceProviderService';
-export * from '../features/service-providers/services/serviceProviderStatsService';
-export * from '../features/service-providers/services/serviceListingService';
-
-// Project Services
-export * from '../features/projects/services/projectRequestService';
-export * from '../features/projects/services/projectDeliveryService';
-export * from '../features/projects/services/WorkSubmissionService';
-
-// Payment Services
-export { default as stripePaymentService } from '../features/payments/services/stripePaymentService';
-export * from '../features/payments/services/stripeConnectService';
-export * from '../features/payments/services/paymentIntegrationService';
-export * from '../features/payments/services/paymentDeliveryService';
-export * from '../features/payments/services/realPaymentService';
-export * from '../features/payments/services/simplePaymentService';
-
-// Posts Services
+// Posts
 export * from '../features/posts/services/postsService';
 export * from '../features/posts/services/optimizedPostsService';
+export * from '../features/posts/services/mediaUploadService';
 
-// Messaging Services
-export * from '../features/messaging/services/messagingService';
-
-// Notifications Services
+// Notifications
 export * from '../features/notifications/services/notificationService';
 
-// Reviews Services
-export * from '../features/reviews/services/reviewService';
-
-// Files Services
-export * from '../features/files/services/mediaUploadService';
-export * from '../features/files/services/fileTransferService';
-
-// Social Services
+// Social
 export * from '../features/social/services/followService';
 
-// AI Services
+// AI
 export * from '../features/ai/services/agenticManagerService';
 
-// Moderation Services
+// Moderation
 export * from './moderationService';
-
-
-
-
-
-

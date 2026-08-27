@@ -59,12 +59,7 @@ export const NotificationsScreen: React.FC = () => {
       }
     }
 
-    // Navigate to project request details
-    if (notification.project_request_id) {
-      (navigation as any).navigate('ProjectRequestDetails', { 
-        requestId: notification.project_request_id 
-      });
-    }
+    // Legacy marketplace notifications have no destination anymore; marking read is enough.
   };
 
   const handleMarkAllAsRead = async () => {

@@ -1,9 +1,2 @@
-// Re-export from new location - src/features/files/services/mediaUploadService.ts
-export * from '../features/files/services/mediaUploadService';
-
-
-
-
-
-
-
+// Re-export — actual implementation lives in src/features/posts/services/mediaUploadService.ts
+export * from '../features/posts/services/mediaUploadService';

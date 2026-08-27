@@ -139,7 +139,7 @@ export const artistExperienceService = {
 
     const popularTracks = postsToTracks(posts, avatarUrl);
     const projects = await artistProjectService.listForArtist(row.id);
-    const current = projects.find((p) => p.statusLive !== false) || projects[0];
+    const current = projects[0];
 
     const artist: Artist = {
       id: row.id,

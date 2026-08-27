@@ -36,10 +36,6 @@ const RoleSelectionScreen: React.FC<RoleSelectionScreenProps> = ({ navigation, r
     navigation.navigate('ArtistOnboarding');
   };
 
-  const handleServiceProviderSelect = () => {
-    navigation.navigate('ServiceProviderOnboarding');
-  };
-
   const handleSkip = async () => {
     await completeOnboarding();
     navigation.reset({
@@ -92,7 +88,7 @@ const RoleSelectionScreen: React.FC<RoleSelectionScreenProps> = ({ navigation, r
               <View style={styles.cardContent}>
                 <Text style={styles.cardTitle}>I'm a Listener</Text>
                 <Text style={styles.cardDescription}>
-                  Browse artists, discover music, hire services
+                  Browse artists and discover music
                 </Text>
               </View>
               <Ionicons name="chevron-forward" size={20} color="#6B7280" />
@@ -126,34 +122,6 @@ const RoleSelectionScreen: React.FC<RoleSelectionScreenProps> = ({ navigation, r
               <Ionicons name="chevron-forward" size={20} color="#6B7280" />
             </LinearGradient>
           </TouchableOpacity>
-
-          {/* Service Provider Card */}
-          <TouchableOpacity 
-            style={styles.card}
-            onPress={handleServiceProviderSelect}
-            activeOpacity={0.8}
-          >
-            <LinearGradient
-              colors={['#1F2937', '#111827']}
-              style={styles.cardGradient}
-            >
-              <View style={styles.cardIcon}>
-                <LinearGradient
-                  colors={['#EC4899', '#DB2777']}
-                  style={styles.iconGradient}
-                >
-                  <Ionicons name="briefcase" size={28} color="#FFFFFF" />
-                </LinearGradient>
-              </View>
-              <View style={styles.cardContent}>
-                <Text style={styles.cardTitle}>I'm a Service Provider</Text>
-                <Text style={styles.cardDescription}>
-                  Offer professional services, get hired, earn money
-                </Text>
-              </View>
-              <Ionicons name="chevron-forward" size={20} color="#6B7280" />
-            </LinearGradient>
-          </TouchableOpacity>
         </View>
 
         {/* Features Preview */}
@@ -164,13 +132,13 @@ const RoleSelectionScreen: React.FC<RoleSelectionScreenProps> = ({ navigation, r
               <View style={styles.featureCheck}>
                 <Ionicons name="checkmark" size={14} color="#10B981" />
               </View>
-              <Text style={styles.featureText}>Discover talented artists and service providers</Text>
+              <Text style={styles.featureText}>Discover talented artists</Text>
             </View>
             <View style={styles.featureItem}>
               <View style={styles.featureCheck}>
                 <Ionicons name="checkmark" size={14} color="#10B981" />
               </View>
-              <Text style={styles.featureText}>Book professional music services instantly</Text>
+              <Text style={styles.featureText}>Support and follow your favorite artists</Text>
             </View>
             <View style={styles.featureItem}>
               <View style={styles.featureCheck}>

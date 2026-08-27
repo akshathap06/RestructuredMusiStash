@@ -12,13 +12,10 @@ import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '../../../contexts/AuthContext';
 import { supabase } from '../../../lib/supabase';
-import { featureFlags } from '../../../config/featureFlags';
 
 interface UserProfiles {
   hasArtistProfile: boolean;
-  hasServiceProvider: boolean;
   artistProfileData?: any;
-  serviceProviderData?: any;
 }
 
 export default function CreateHubScreen({ navigation }: { navigation: any }) {
@@ -27,7 +24,6 @@ export default function CreateHubScreen({ navigation }: { navigation: any }) {
   const [loading, setLoading] = useState(true);
   const [profiles, setProfiles] = useState<UserProfiles>({
     hasArtistProfile: false,
-    hasServiceProvider: false,
   });
 
   useEffect(() => {
@@ -46,18 +42,9 @@ export default function CreateHubScreen({ navigation }: { navigation: any }) {
         .eq('user_id', user?.id)
         .single();
 
-      const { data: serviceProvider } = await supabase
-        .from('service_providers')
-        .select('*')
-        .eq('user_id', user?.id)
-        .order('created_at', { ascending: false })
-        .limit(1);
-
       setProfiles({
         hasArtistProfile: !!artistProfile,
-        hasServiceProvider: !!(serviceProvider && serviceProvider.length > 0),
         artistProfileData: artistProfile,
-        serviceProviderData: serviceProvider?.[0],
       });
     } catch (error) {
       console.error('Error loading user profiles:', error);
@@ -104,30 +91,8 @@ export default function CreateHubScreen({ navigation }: { navigation: any }) {
     });
   };
 
-  const handleCreateServiceListing = () => {
-    if (!profiles.hasServiceProvider) {
-      Alert.alert(
-        'Service Provider Required',
-        'Create a service provider account first to list services.',
-        [
-          { text: 'Cancel', style: 'cancel' },
-          { text: 'Create Account', onPress: () => navigation.navigate('CreateServiceProvider') },
-        ]
-      );
-      return;
-    }
-    navigation.navigate('CreatePost', { 
-      serviceListingMode: true,
-      serviceProvider: profiles.serviceProviderData 
-    });
-  };
-
   const handleCreateArtistProfile = () => {
     navigation.navigate('CreateArtist');
-  };
-
-  const handleCreateServiceProvider = () => {
-    navigation.navigate('CreateServiceProvider');
   };
 
   if (loading) {
@@ -213,37 +178,6 @@ export default function CreateHubScreen({ navigation }: { navigation: any }) {
             </TouchableOpacity>
           )}
 
-          {/* List a Service — marketplace gated */}
-          {featureFlags.MARKETPLACE_ENABLED && (
-          <TouchableOpacity 
-            style={[styles.optionCard, !profiles.hasServiceProvider && styles.optionCardDim]}
-            onPress={handleCreateServiceListing}
-            activeOpacity={0.7}
-          >
-            <View style={[styles.iconBox, { backgroundColor: profiles.hasServiceProvider ? '#3B82F615' : '#6B728015' }]}>
-              <Ionicons 
-                name="briefcase-outline" 
-                size={22} 
-                color={profiles.hasServiceProvider ? '#3B82F6' : '#6B7280'} 
-              />
-            </View>
-            <View style={styles.optionContent}>
-              <Text style={[styles.optionTitle, !profiles.hasServiceProvider && styles.optionTitleDim]}>
-                List a Service
-              </Text>
-              <Text style={styles.optionDesc}>
-                {profiles.hasServiceProvider ? 'Create a marketplace listing' : 'Requires service account'}
-              </Text>
-            </View>
-            {profiles.hasServiceProvider ? (
-              <Ionicons name="chevron-forward" size={20} color="#4B5563" />
-            ) : (
-              <View style={styles.lockBadge}>
-                <Ionicons name="lock-closed" size={12} color="#F59E0B" />
-              </View>
-            )}
-          </TouchableOpacity>
-          )}
         </View>
 
         {/* Divider */}
@@ -280,34 +214,6 @@ export default function CreateHubScreen({ navigation }: { navigation: any }) {
               </View>
             )}
           </TouchableOpacity>
-
-          {/* Service Provider — marketplace gated */}
-          {featureFlags.MARKETPLACE_ENABLED && (
-          <TouchableOpacity 
-            style={styles.setupCard}
-            onPress={handleCreateServiceProvider}
-            activeOpacity={0.7}
-          >
-            <View style={styles.setupLeft}>
-              <View style={[styles.setupIcon, { backgroundColor: '#F59E0B15' }]}>
-                <Ionicons name="storefront" size={20} color="#F59E0B" />
-              </View>
-              <View>
-                <Text style={styles.setupTitle}>Service Provider</Text>
-                <Text style={styles.setupDesc}>Offer professional services</Text>
-              </View>
-            </View>
-            {profiles.hasServiceProvider ? (
-              <View style={styles.completeBadge}>
-                <Ionicons name="checkmark" size={14} color="#3B82F6" />
-              </View>
-            ) : (
-              <View style={styles.newBadge}>
-                <Text style={styles.newBadgeText}>Set up</Text>
-              </View>
-            )}
-          </TouchableOpacity>
-          )}
         </View>
 
         {/* Status Footer */}
@@ -320,10 +226,6 @@ export default function CreateHubScreen({ navigation }: { navigation: any }) {
             <View style={styles.statusItem}>
               <View style={[styles.statusDot, { backgroundColor: profiles.hasArtistProfile ? '#3B82F6' : '#374151' }]} />
               <Text style={styles.statusText}>Artist</Text>
-            </View>
-            <View style={styles.statusItem}>
-              <View style={[styles.statusDot, { backgroundColor: profiles.hasServiceProvider ? '#3B82F6' : '#374151' }]} />
-              <Text style={styles.statusText}>Provider</Text>
             </View>
           </View>
         </View>
@@ -399,14 +301,6 @@ const styles = StyleSheet.create({
   optionDesc: {
     fontSize: 13,
     color: '#6B7280',
-  },
-  lockBadge: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    backgroundColor: '#F59E0B15',
-    justifyContent: 'center',
-    alignItems: 'center',
   },
   divider: {
     flexDirection: 'row',

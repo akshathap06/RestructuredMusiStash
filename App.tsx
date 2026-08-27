@@ -25,11 +25,9 @@ import WelcomeCarouselScreen from './src/features/auth/screens/WelcomeCarouselSc
 import RoleSelectionScreen from './src/features/auth/screens/RoleSelectionScreen';
 import ArtistOnboardingScreen from './src/features/auth/screens/ArtistOnboardingScreen';
 import ArtistOnboardingCompleteScreen from './src/features/auth/screens/ArtistOnboardingCompleteScreen';
-import ServiceProviderOnboardingScreen from './src/features/auth/screens/ServiceProviderOnboardingScreen';
-import ServiceProviderOnboardingCompleteScreen from './src/features/auth/screens/ServiceProviderOnboardingCompleteScreen';
 
 // --- Profile Feature ---
-import ProfileScreen from './src/features/profile/screens/ProfileScreen';
+import ProfileV2Screen from './src/features/profile/screens/ProfileV2Screen';
 import SearchScreen from './src/features/profile/screens/SearchScreen';
 import { ProductionProfileService } from './src/features/profile/services/productionProfileService';
 
@@ -37,56 +35,15 @@ import { ProductionProfileService } from './src/features/profile/services/produc
 import BrowseArtistsScreen from './src/features/artists/screens/BrowseArtistsScreen';
 import ArtistProfileScreen from './src/features/artists/screens/ArtistProfileScreen';
 import ArtistExperienceScreen from './src/features/artists/screens/ArtistExperienceScreen';
-import CreateArtistScreen from './src/features/artists/screens/CreateArtistScreen';
+import CreateArtistV2Screen from './src/features/artists/screens/CreateArtistV2Screen';
 import CreateArtistProjectScreen from './src/features/artists/screens/CreateArtistProjectScreen';
 import { ApprovedArtistsService } from './src/features/artists/services/approvedArtistsService';
-// ArtistProfileViewScreen retained in repo; public route uses ArtistExperienceScreen
-
-// --- Service Providers Feature ---
-import ServiceProviderScreen from './src/features/service-providers/screens/ServiceProviderScreen';
-import ServiceProvidersScreen from './src/features/service-providers/screens/ServiceProvidersScreen';
-import ServiceProviderDetailScreen from './src/features/service-providers/screens/ServiceProviderDetailScreen';
-import CreateServiceProviderScreen from './src/features/service-providers/screens/CreateServiceProviderScreen';
-import ServiceProviderDashboardScreen from './src/features/service-providers/screens/ServiceProviderDashboardScreen';
-import ServiceProviderRequestsScreen from './src/features/service-providers/screens/ServiceProviderRequestsScreen';
-import ContactServiceProviderScreen from './src/features/service-providers/screens/ContactServiceProviderScreen';
-import ManageServicesScreen from './src/features/service-providers/screens/ManageServicesScreen';
-import ManagePortfolioScreen from './src/features/service-providers/screens/ManagePortfolioScreen';
-
-// --- Projects Feature ---
-import ProjectRequestsScreen from './src/features/projects/screens/ProjectRequestsScreen';
-import ProjectRequestDetailsScreen from './src/features/projects/screens/ProjectRequestDetailsScreen';
-import ProjectSubmissionScreen from './src/features/projects/screens/ProjectSubmissionScreen';
-import NewWorkSubmissionScreen from './src/features/projects/screens/NewWorkSubmissionScreen';
-import ClientWorkViewScreen from './src/features/projects/screens/ClientWorkViewScreen';
-import SubmitWorkScreen from './src/features/projects/screens/SubmitWorkScreen';
-import RequestRevisionScreen from './src/features/projects/screens/RequestRevisionScreen';
-import { WorkSubmissionScreen } from './src/features/projects/screens/WorkSubmissionScreen';
-
-// --- Delivery Feature ---
-import ClientDeliveryScreen from './src/features/delivery/screens/ClientDeliveryScreen';
-import ClientDeliveryListScreen from './src/features/delivery/screens/ClientDeliveryListScreen';
-import DeliveryPreviewScreen from './src/features/delivery/screens/DeliveryPreviewScreen';
-import { DeliveryScreen } from './src/features/delivery/screens/DeliveryScreen';
-
-// --- Payments Feature ---
-import { StripeProvider } from './src/features/payments/StripeContext';
-import { PaymentScreen } from './src/features/payments/screens/PaymentScreen';
-import { PaymentReceiptScreen } from './src/features/payments/screens/PaymentReceiptScreen';
-import ProviderEarningsScreen from './src/features/payments/screens/ProviderEarningsScreen';
-import SimpleEarningsScreen from './src/features/payments/screens/SimpleEarningsScreen';
-import MyOrdersScreen from './src/features/payments/screens/MyOrdersScreen';
 
 // --- Posts Feature ---
 import PostsScreen from './src/features/posts/screens/PostsScreen';
 import CreatePostScreen from './src/features/posts/screens/CreatePostScreen';
 import CreateHubScreen from './src/features/posts/screens/CreateHubScreen';
 import PostDetailScreen from './src/features/posts/screens/PostDetailScreen';
-
-// --- Messaging Feature ---
-import MessagesScreen from './src/features/messaging/screens/MessagesScreen';
-import NewMessageScreen from './src/features/messaging/screens/NewMessageScreen';
-import ChatScreen from './src/features/messaging/screens/ChatScreen';
 
 // --- Notifications Feature ---
 import { NotificationsScreen } from './src/features/notifications/screens/NotificationsScreen';
@@ -100,17 +57,8 @@ import ReportBugScreen from './src/features/settings/screens/ReportBugScreen';
 import OpenSourceLicensesScreen from './src/features/settings/screens/OpenSourceLicensesScreen';
 import ChangelogScreen from './src/features/settings/screens/ChangelogScreen';
 
-// --- Files Feature ---
-import { FileTransferPortalScreen } from './src/features/files/screens/FileTransferPortalScreen';
-
 // --- AI Feature ---
 import AgenticManagerScreen from './src/features/ai/screens/AgenticManagerScreen';
-
-// --- Investment Feature (legacy; gated) ---
-import CampaignBrowseScreen from './src/features/investments/screens/CampaignBrowseScreen';
-import CampaignDetailScreen from './src/features/investments/screens/CampaignDetailScreen';
-import SharePurchaseScreen from './src/features/investments/screens/SharePurchaseScreen';
-import InvestorDashboardScreen from './src/features/investments/screens/InvestorDashboardScreen';
 
 // --- V2 Paper Trading / Explore / Waitlist ---
 import PortfolioScreen from './src/features/paper-trading/screens/PortfolioScreen';
@@ -204,104 +152,64 @@ const AnimatedSplash = ({ children, isReady }: { children: React.ReactNode; isRe
 import { View, TouchableOpacity, StyleSheet, Modal, Text, Animated, Dimensions, ScrollView, Image, ImageBackground } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
-// Conditionally import StripePaymentService for mobile only
-let StripePaymentService: any = null;
-if (Platform.OS !== 'web') {
-  StripePaymentService = require('./src/features/payments/services/stripePaymentService').default;
-}
-
-
 const Stack = createStackNavigator();
 const Tab = createBottomTabNavigator();
 const ProfileStack = createStackNavigator();
 
-// Menu item configurations — V2 paper product (marketplace items gated)
-const MAIN_MENU_ITEMS = [
-  ...(featureFlags.AGENTIC_MANAGER_ENABLED
-    ? [{ icon: 'flash', label: 'Agentic Manager', route: 'AgenticManager', colors: ['#8B5CF6', '#7C3AED', '#6D28D9'] }]
-    : []),
-  { icon: 'wallet', label: 'Portfolio', route: 'Portfolio', colors: ['#8B5CF6', '#7C3AED', '#A78BFA'] },
-  { icon: 'compass', label: 'Explore', route: 'Explore', colors: ['#8B5CF6', '#7C3AED', '#A78BFA'] },
-  { icon: 'person', label: 'Profile', route: 'Profile', colors: ['#8B5CF6', '#7C3AED', '#A78BFA'] },
-  { icon: 'add-circle', label: 'Create', route: 'Create', colors: ['#8B5CF6', '#06B6D4', '#14B8A6'] },
+// Minimal Robinhood-style menu: flat rows grouped in quiet sections, no icon boxes
+const MENU_WIDTH = 300;
+
+type MenuItem = { icon: string; label: string; route: string };
+type MenuSection = { label?: string; items: MenuItem[] };
+
+const MENU_SECTIONS: MenuSection[] = [
+  {
+    items: [
+      ...(featureFlags.AGENTIC_MANAGER_ENABLED
+        ? [{ icon: 'flash-outline', label: 'Agentic manager', route: 'AgenticManager' }]
+        : []),
+      { icon: 'notifications-outline', label: 'Notifications', route: 'Notifications' },
+      { icon: 'settings-outline', label: 'Settings', route: 'Settings' },
+    ],
+  },
+  {
+    label: 'Artists',
+    items: [
+      { icon: 'people-outline', label: 'Browse artists', route: 'BrowseArtists' },
+      { icon: 'sparkles-outline', label: 'Kaleb (demo profile)', route: 'ArtistExperience' },
+      { icon: 'mic-outline', label: 'Become an artist', route: 'CreateArtist' },
+    ],
+  },
   ...(featureFlags.WAITLIST_ENABLED
-    ? [{ icon: 'mail', label: 'Join Waitlist', route: 'Waitlist', colors: ['#8B5CF6', '#A78BFA', '#7C3AED'] }]
-    : []),
-  ...(featureFlags.MARKETPLACE_ENABLED
     ? [
-        { icon: 'document-text', label: 'My Requests', route: 'ProjectRequests', colors: ['#8B5CF6', '#7C3AED', '#6D28D9'] },
-        { icon: 'cube', label: 'My Orders', route: 'MyOrders', colors: ['#8B5CF6', '#A78BFA', '#7C3AED'] },
+        {
+          label: 'Launch',
+          items: [{ icon: 'mail-outline', label: 'Join real-money waitlist', route: 'Waitlist' }],
+        },
       ]
     : []),
 ];
 
-const BECOME_MENU_ITEMS = [
-  { icon: 'person-add', label: 'Become an Artist', route: 'CreateArtist', colors: ['#10B981', '#22C55E', '#14B8A6'] },
-  ...(featureFlags.MARKETPLACE_ENABLED
-    ? [{ icon: 'briefcase', label: 'Become Service Provider', route: 'CreateServiceProvider', colors: ['#06B6D4', '#0EA5E9', '#8B5CF6'] }]
-    : []),
-];
-
-const BROWSE_MENU_ITEMS = [
-  { icon: 'people', label: 'Browse Artists', route: 'BrowseArtists', colors: ['#8B5CF6', '#7C3AED', '#A78BFA'] },
-  { icon: 'star', label: 'Kaleb (Demo Profile)', route: 'ArtistExperience', colors: ['#8B5CF6', '#A78BFA', '#7C3AED'] },
-];
-
-const BOTTOM_MENU_ITEMS = [
-  { icon: 'notifications', label: 'Notifications', route: 'Notifications', hasNotification: true },
-  { icon: 'settings', label: 'Settings', route: 'Settings' },
-  { icon: 'log-out', label: 'Log Out', route: 'Logout', danger: true },
-];
-
-// Universal header with hamburger menu for all tabs
-function UniversalHeader({ navigation, title, subtitle }: { navigation: any, title: string, subtitle?: string }) {
+// Minimal universal header: avatar opens the menu, quiet title, bell on the right
+function UniversalHeader({ navigation, title }: { navigation: any, title: string, subtitle?: string }) {
   const { user, signOut } = useAuth();
   const insets = useSafeAreaInsets();
   const [isMenuVisible, setIsMenuVisible] = useState(false);
-  const slideAnim = useState(new Animated.Value(-340))[0];
-  const fadeAnim = useState(new Animated.Value(0))[0];
-  const glowAnim = useState(new Animated.Value(0.6))[0];
-
-  // Pulsing glow animation for avatar
-  React.useEffect(() => {
-    if (isMenuVisible) {
-      Animated.loop(
-        Animated.sequence([
-          Animated.timing(glowAnim, { toValue: 1, duration: 1500, useNativeDriver: true }),
-          Animated.timing(glowAnim, { toValue: 0.6, duration: 1500, useNativeDriver: true }),
-        ])
-      ).start();
-    }
-  }, [isMenuVisible]);
+  const slideAnim = useRef(new Animated.Value(-MENU_WIDTH)).current;
+  const fadeAnim = useRef(new Animated.Value(0)).current;
 
   const handleMenuPress = () => {
     setIsMenuVisible(true);
     Animated.parallel([
-      Animated.timing(slideAnim, {
-        toValue: 0,
-        duration: 300,
-        useNativeDriver: true,
-      }),
-      Animated.timing(fadeAnim, {
-        toValue: 1,
-        duration: 300,
-        useNativeDriver: true,
-      }),
+      Animated.timing(slideAnim, { toValue: 0, duration: 220, useNativeDriver: true }),
+      Animated.timing(fadeAnim, { toValue: 1, duration: 220, useNativeDriver: true }),
     ]).start();
   };
 
   const handleCloseMenu = () => {
     Animated.parallel([
-      Animated.timing(slideAnim, {
-        toValue: -340,
-        duration: 250,
-        useNativeDriver: true,
-      }),
-      Animated.timing(fadeAnim, {
-        toValue: 0,
-        duration: 250,
-        useNativeDriver: true,
-      }),
+      Animated.timing(slideAnim, { toValue: -MENU_WIDTH, duration: 180, useNativeDriver: true }),
+      Animated.timing(fadeAnim, { toValue: 0, duration: 180, useNativeDriver: true }),
     ]).start(() => {
       setIsMenuVisible(false);
     });
@@ -342,17 +250,8 @@ function UniversalHeader({ navigation, title, subtitle }: { navigation: any, tit
         case 'AgenticManager':
           if (featureFlags.AGENTIC_MANAGER_ENABLED) navigation.navigate('AgenticManager');
           break;
-        case 'CreateServiceProvider':
-          if (featureFlags.MARKETPLACE_ENABLED) navigation.navigate('CreateServiceProvider');
-          break;
         case 'CreateArtist':
           navigation.navigate('CreateArtist');
-          break;
-        case 'ProjectRequests':
-          if (featureFlags.MARKETPLACE_ENABLED) navigation.navigate('ProjectRequests');
-          break;
-        case 'MyOrders':
-          if (featureFlags.MARKETPLACE_ENABLED) navigation.navigate('MyOrders');
           break;
         case 'Notifications':
           navigation.navigate('Notifications');
@@ -363,59 +262,58 @@ function UniversalHeader({ navigation, title, subtitle }: { navigation: any, tit
         default:
           console.log(`Route not configured: ${route}`);
       }
-    }, 300); // Wait for menu close animation
+    }, 220); // Wait for menu close animation
   };
 
-  const renderMenuItem = (item: any, index: number, hasGradient: boolean = true) => (
+  const goToProfile = () => {
+    handleCloseMenu();
+    setTimeout(() => navigation.navigate('MainTabs', { screen: 'Profile' }), 220);
+  };
+
+  const renderMenuItem = (item: MenuItem) => (
     <TouchableOpacity
-      key={index}
+      key={item.route + item.label}
       style={sidebarStyles.menuItem}
       onPress={() => handleMenuItemPress(item.route)}
-      activeOpacity={0.7}
+      activeOpacity={0.6}
+      accessibilityRole="button"
+      accessibilityLabel={item.label}
     >
-      {hasGradient ? (
-        <View style={[sidebarStyles.menuIconBox, { backgroundColor: item.colors[1] }]}>
-          <Ionicons name={item.icon as any} size={18} color="#FFFFFF" />
-        </View>
-      ) : (
-        <View style={[sidebarStyles.menuIconBoxSimple, item.danger && sidebarStyles.menuIconBoxDanger]}>
-          <Ionicons 
-            name={item.icon as any} 
-            size={18} 
-            color={item.danger ? '#F87171' : '#9CA3AF'} 
-          />
-          {item.hasNotification && <View style={sidebarStyles.notificationDot} />}
-        </View>
-      )}
-      <Text style={[
-        sidebarStyles.menuItemText, 
-        item.danger && sidebarStyles.menuItemTextDanger
-      ]}>
-        {item.label}
-      </Text>
+      <Ionicons name={item.icon as any} size={20} color="#AAA8AE" />
+      <Text style={sidebarStyles.menuItemText}>{item.label}</Text>
     </TouchableOpacity>
   );
 
+  const avatarInitial = (user?.name || 'M').trim().charAt(0).toUpperCase();
+
   return (
-    <View style={[styles.headerContainer, { paddingTop: insets.top + 16 }]}>
-      <View style={styles.headerLeft}>
-        <TouchableOpacity style={styles.menuButton} onPress={handleMenuPress}>
-          <Ionicons name="menu-outline" size={24} color="#FFFFFF" />
-        </TouchableOpacity>
-      </View>
-      
-      <View style={styles.headerCenter}>
-        <Image 
-          source={require('./assets/logo-final.png')} 
-          style={styles.headerLogo}
-          resizeMode="contain"
-        />
-      </View>
-      
-      <View style={styles.headerRight}>
-        {/* Empty view for layout balance */}
-      </View>
-      
+    <View style={[styles.headerContainer, { paddingTop: insets.top + 6 }]}>
+      <TouchableOpacity
+        style={styles.headerAvatarButton}
+        onPress={handleMenuPress}
+        accessibilityRole="button"
+        accessibilityLabel="Open menu"
+      >
+        {user?.avatar ? (
+          <Image source={{ uri: user.avatar }} style={styles.headerAvatar} />
+        ) : (
+          <View style={[styles.headerAvatar, styles.headerAvatarFallback]}>
+            <Text style={styles.headerAvatarInitial}>{avatarInitial}</Text>
+          </View>
+        )}
+      </TouchableOpacity>
+
+      <Text style={styles.headerTitle}>{title}</Text>
+
+      <TouchableOpacity
+        style={styles.headerIconButton}
+        onPress={() => navigation.navigate('Notifications')}
+        accessibilityRole="button"
+        accessibilityLabel="Notifications"
+      >
+        <Ionicons name="notifications-outline" size={22} color="#AAA8AE" />
+      </TouchableOpacity>
+
       <Modal
         visible={isMenuVisible}
         transparent={true}
@@ -423,90 +321,79 @@ function UniversalHeader({ navigation, title, subtitle }: { navigation: any, tit
         onRequestClose={handleCloseMenu}
       >
         <Animated.View style={[sidebarStyles.overlay, { opacity: fadeAnim }]}>
-          <TouchableOpacity 
-            style={sidebarStyles.backdrop} 
-            activeOpacity={1} 
+          <TouchableOpacity
+            style={sidebarStyles.backdrop}
+            activeOpacity={1}
             onPress={handleCloseMenu}
           />
-          <Animated.View style={[sidebarStyles.sidebar, { transform: [{ translateX: slideAnim }] }]}>
-            {/* Header */}
-            <View style={sidebarStyles.header}>
-              <View style={sidebarStyles.headerContent}>
-                <View style={sidebarStyles.avatarWrapper}>
-                  <Animated.View style={[sidebarStyles.avatarGlow, { opacity: glowAnim }]} />
-                  <View style={sidebarStyles.avatarBorder}>
-                    <View style={sidebarStyles.avatar}>
-                      <Ionicons name="person" size={24} color="#FFFFFF" />
-                    </View>
-                  </View>
-                </View>
-                <View style={sidebarStyles.userInfo}>
-                  <Text style={sidebarStyles.userName} numberOfLines={1}>
-                    {user?.name || 'Welcome Back'}
-                  </Text>
-                  <Text style={sidebarStyles.userEmail} numberOfLines={1}>
-                    {user?.email || 'music@musistash.com'}
-                  </Text>
-                </View>
+        </Animated.View>
+        <Animated.View style={[sidebarStyles.sidebar, { transform: [{ translateX: slideAnim }] }]}>
+          {/* Account block — tapping goes to Profile */}
+          <TouchableOpacity
+            style={[sidebarStyles.account, { paddingTop: insets.top + 24 }]}
+            onPress={goToProfile}
+            activeOpacity={0.7}
+            accessibilityRole="button"
+            accessibilityLabel="Open your profile"
+          >
+            {user?.avatar ? (
+              <Image source={{ uri: user.avatar }} style={sidebarStyles.accountAvatar} />
+            ) : (
+              <View style={[sidebarStyles.accountAvatar, sidebarStyles.accountAvatarFallback]}>
+                <Text style={sidebarStyles.accountAvatarInitial}>{avatarInitial}</Text>
               </View>
-              <TouchableOpacity style={sidebarStyles.closeButton} onPress={handleCloseMenu}>
-                <Ionicons name="close" size={20} color="#9CA3AF" />
-              </TouchableOpacity>
+            )}
+            <View style={sidebarStyles.accountInfo}>
+              <Text style={sidebarStyles.accountName} numberOfLines={1}>
+                {user?.name || 'Your account'}
+              </Text>
+              <Text style={sidebarStyles.accountEmail} numberOfLines={1}>
+                {user?.email || ''}
+              </Text>
             </View>
+            <Ionicons name="chevron-forward" size={16} color="#73717A" />
+          </TouchableOpacity>
 
-            {/* Scrollable Menu Content */}
-            <ScrollView 
-              style={sidebarStyles.scrollView}
-              contentContainerStyle={sidebarStyles.scrollContent}
-              showsVerticalScrollIndicator={false}
-              bounces={true}
+          <ScrollView
+            style={sidebarStyles.scrollView}
+            contentContainerStyle={sidebarStyles.scrollContent}
+            showsVerticalScrollIndicator={false}
+          >
+            {MENU_SECTIONS.map((section, i) => (
+              <View key={section.label ?? `section-${i}`} style={sidebarStyles.menuSection}>
+                {section.label ? (
+                  <Text style={sidebarStyles.sectionLabel}>{section.label.toUpperCase()}</Text>
+                ) : null}
+                {section.items.map(renderMenuItem)}
+              </View>
+            ))}
+
+            <View style={sidebarStyles.divider} />
+
+            <TouchableOpacity
+              style={sidebarStyles.menuItem}
+              onPress={() => handleMenuItemPress('Logout')}
+              activeOpacity={0.6}
+              accessibilityRole="button"
+              accessibilityLabel="Log out"
             >
-              {/* Main Actions */}
-              <View style={sidebarStyles.menuSection}>
-                {MAIN_MENU_ITEMS.map((item, index) => renderMenuItem(item, index, true))}
-              </View>
+              <Ionicons name="log-out-outline" size={20} color="#EF4444" />
+              <Text style={[sidebarStyles.menuItemText, sidebarStyles.menuItemTextDanger]}>Log out</Text>
+            </TouchableOpacity>
 
-              {/* Become Section */}
-              <View style={sidebarStyles.menuSection}>
-                <Text style={sidebarStyles.sectionLabel}>BECOME</Text>
-                {BECOME_MENU_ITEMS.map((item, index) => renderMenuItem(item, index, true))}
-              </View>
-
-              {/* Browse Section */}
-              <View style={sidebarStyles.menuSection}>
-                <Text style={sidebarStyles.sectionLabel}>BROWSE</Text>
-                {BROWSE_MENU_ITEMS.map((item, index) => renderMenuItem(item, index, true))}
-              </View>
-
-              {/* Divider */}
-              <View style={sidebarStyles.divider} />
-
-              {/* Bottom Actions */}
-              <View style={sidebarStyles.menuSection}>
-                {BOTTOM_MENU_ITEMS.map((item, index) => renderMenuItem(item, index, false))}
-              </View>
-
-              {/* Footer inside scroll */}
-              <View style={sidebarStyles.footer}>
-                <View style={sidebarStyles.statusPill}>
-                  <View style={sidebarStyles.statusDot} />
-                  <Text style={sidebarStyles.statusText}>All Systems Operational</Text>
-                </View>
-                <Text style={sidebarStyles.versionText}>MusiStash v1.0.0</Text>
-              </View>
-            </ScrollView>
-          </Animated.View>
+            <Text style={sidebarStyles.versionText}>MusiStash v1.0.0 — paper trading simulation</Text>
+          </ScrollView>
         </Animated.View>
       </Modal>
     </View>
   );
 }
 
-// Premium Sidebar Styles
+// Minimal sidebar styles (Robinhood-inspired)
 const sidebarStyles = StyleSheet.create({
   overlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0, 0, 0, 0.6)',
   },
   backdrop: {
     flex: 1,
@@ -516,207 +403,98 @@ const sidebarStyles = StyleSheet.create({
     left: 0,
     top: 0,
     bottom: 0,
-    width: 340,
-    backgroundColor: '#030712',
-    borderRightWidth: 1,
-    borderRightColor: 'rgba(55, 65, 81, 0.5)',
-    shadowColor: '#000',
-    shadowOffset: { width: 8, height: 0 },
-    shadowOpacity: 0.5,
-    shadowRadius: 24,
-    elevation: 25,
+    width: MENU_WIDTH,
+    backgroundColor: '#0B0D11',
+    borderRightWidth: StyleSheet.hairlineWidth,
+    borderRightColor: 'rgba(255, 255, 255, 0.10)',
   },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    justifyContent: 'space-between',
-    paddingHorizontal: 24,
-    paddingTop: 70,
-    paddingBottom: 24,
-    borderBottomWidth: 1,
-    borderBottomColor: 'rgba(55, 65, 81, 0.5)',
-    backgroundColor: 'rgba(17, 24, 39, 0.8)',
-  },
-  headerContent: {
+  account: {
     flexDirection: 'row',
     alignItems: 'center',
-    flex: 1,
-    gap: 16,
+    paddingHorizontal: 20,
+    paddingBottom: 20,
+    gap: 12,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: 'rgba(255, 255, 255, 0.10)',
   },
-  avatarWrapper: {
-    position: 'relative',
+  accountAvatar: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
   },
-  avatarGlow: {
-    position: 'absolute',
-    top: -4,
-    left: -4,
-    right: -4,
-    bottom: -4,
-    borderRadius: 32,
-    backgroundColor: 'transparent',
-    borderWidth: 3,
-    borderColor: '#3B82F6',
-    shadowColor: '#3B82F6',
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.6,
-    shadowRadius: 12,
-  },
-  avatarBorder: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    padding: 2,
-    backgroundColor: '#3B82F6',
-  },
-  avatar: {
-    width: '100%',
-    height: '100%',
-    borderRadius: 26,
-    backgroundColor: '#1F2937',
+  accountAvatarFallback: {
+    backgroundColor: '#101318',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.10)',
+    alignItems: 'center',
     justifyContent: 'center',
-    alignItems: 'center',
   },
-  userInfo: {
+  accountAvatarInitial: {
+    color: '#F5F3EF',
+    fontSize: 17,
+    fontWeight: '600',
+  },
+  accountInfo: {
     flex: 1,
     minWidth: 0,
   },
-  userName: {
+  accountName: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#FFFFFF',
-    letterSpacing: -0.3,
+    color: '#F5F3EF',
+    letterSpacing: -0.2,
   },
-  userEmail: {
+  accountEmail: {
     fontSize: 12,
-    color: '#9CA3AF',
-    marginTop: 4,
-  },
-  closeButton: {
-    padding: 8,
-    borderRadius: 8,
-    backgroundColor: 'rgba(255, 255, 255, 0.05)',
-    marginLeft: 8,
+    color: '#73717A',
+    marginTop: 2,
   },
   scrollView: {
     flex: 1,
   },
   scrollContent: {
-    paddingVertical: 20,
-    paddingHorizontal: 20,
+    paddingVertical: 12,
     paddingBottom: 40,
   },
-  menuContent: {
-    flex: 1,
-    paddingVertical: 20,
-    paddingHorizontal: 20,
-  },
   menuSection: {
-    marginBottom: 20,
+    marginBottom: 8,
   },
   sectionLabel: {
     fontSize: 11,
     fontWeight: '600',
-    color: '#6B7280',
-    letterSpacing: 1.5,
-    marginBottom: 12,
-    marginLeft: 16,
+    color: '#73717A',
+    letterSpacing: 1,
+    marginTop: 12,
+    marginBottom: 4,
+    marginLeft: 20,
   },
   menuItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 12,
-    paddingHorizontal: 14,
-    borderRadius: 12,
-    marginBottom: 2,
-  },
-  menuIconBox: {
-    width: 38,
-    height: 38,
-    borderRadius: 10,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 14,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 8,
-  },
-  menuIconBoxSimple: {
-    width: 38,
-    height: 38,
-    borderRadius: 10,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 14,
-    backgroundColor: 'rgba(255, 255, 255, 0.05)',
-  },
-  menuIconBoxDanger: {
-    backgroundColor: 'rgba(239, 68, 68, 0.1)',
+    height: 48,
+    paddingHorizontal: 20,
+    gap: 14,
   },
   menuItemText: {
     fontSize: 15,
     fontWeight: '500',
-    color: '#FFFFFF',
+    color: '#F5F3EF',
     flex: 1,
   },
   menuItemTextDanger: {
-    color: '#F87171',
-  },
-  notificationDot: {
-    position: 'absolute',
-    top: 8,
-    right: 8,
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-    backgroundColor: '#EF4444',
-    borderWidth: 2,
-    borderColor: '#030712',
+    color: '#EF4444',
   },
   divider: {
-    height: 1,
-    marginVertical: 12,
-    marginHorizontal: 16,
-    backgroundColor: 'rgba(55, 65, 81, 0.5)',
-  },
-  footer: {
-    marginTop: 20,
-    paddingVertical: 20,
-    paddingHorizontal: 16,
-    borderTopWidth: 1,
-    borderTopColor: 'rgba(55, 65, 81, 0.5)',
-    alignItems: 'center',
-  },
-  statusPill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 20,
-    backgroundColor: 'rgba(59, 130, 246, 0.1)',
-    borderWidth: 1,
-    borderColor: 'rgba(55, 65, 81, 0.5)',
-    gap: 8,
-  },
-  statusDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: '#10B981',
-    shadowColor: '#10B981',
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.8,
-    shadowRadius: 4,
-  },
-  statusText: {
-    fontSize: 12,
-    color: '#9CA3AF',
+    height: StyleSheet.hairlineWidth,
+    marginVertical: 8,
+    marginHorizontal: 20,
+    backgroundColor: 'rgba(255, 255, 255, 0.10)',
   },
   versionText: {
     fontSize: 11,
-    color: '#4B5563',
-    marginTop: 8,
+    color: '#73717A',
+    marginTop: 16,
+    marginLeft: 20,
   },
 });
 
@@ -736,7 +514,7 @@ function ProfileStackNavigator() {
     >
       <ProfileStack.Screen 
         name="ProfileMain" 
-        component={ProfileScreen}
+        component={ProfileV2Screen}
         options={{ headerShown: false }}
       />
       <ProfileStack.Screen 
@@ -822,16 +600,16 @@ function MainTabs({ navigation: parentNavigation }: { navigation: any }) {
           return <Ionicons name={iconName} size={size} color={color} />;
         },
         tabBarStyle: {
-          backgroundColor: '#000000',
-          borderTopColor: '#262626',
-          borderTopWidth: 0.5,
+          backgroundColor: '#080A0D',
+          borderTopColor: 'rgba(255, 255, 255, 0.08)',
+          borderTopWidth: StyleSheet.hairlineWidth,
           paddingBottom: Math.max(insets.bottom, 8),
           paddingTop: 6,
           height: 58 + Math.max(insets.bottom, 8),
           paddingHorizontal: 8,
         },
-        tabBarActiveTintColor: '#FFFFFF',
-        tabBarInactiveTintColor: '#6B7280',
+        tabBarActiveTintColor: '#F5F3EF',
+        tabBarInactiveTintColor: '#73717A',
         tabBarLabelStyle: {
           fontSize: 11,
           fontWeight: '600',
@@ -945,7 +723,7 @@ function MainStack() {
       />
       <Stack.Screen
         name="CreateArtist"
-        component={CreateArtistScreen}
+        component={CreateArtistV2Screen}
         options={{ headerShown: false }}
       />
       <Stack.Screen
@@ -1014,53 +792,6 @@ function MainStack() {
           component={AgenticManagerScreen}
           options={{ headerShown: false }}
         />
-      )}
-      {featureFlags.MESSAGING_ENABLED && (
-        <>
-          <Stack.Screen name="Messages" component={MessagesScreen} options={{ headerShown: false }} />
-          <Stack.Screen name="NewMessage" component={NewMessageScreen} options={{ headerShown: false }} />
-          <Stack.Screen name="Chat" component={ChatScreen} options={{ headerShown: false }} />
-        </>
-      )}
-      {featureFlags.MARKETPLACE_ENABLED && (
-        <>
-          <Stack.Screen name="ServiceProvider" component={ServiceProviderScreen} options={{ headerShown: false }} />
-          <Stack.Screen name="ServiceProviderDetail" component={ServiceProviderDetailScreen} options={{ headerShown: false }} />
-          <Stack.Screen name="CreateServiceProvider" component={CreateServiceProviderScreen} options={{ headerShown: false }} />
-          <Stack.Screen name="ContactServiceProvider" component={ContactServiceProviderScreen} options={{ headerShown: false }} />
-          <Stack.Screen name="ProjectRequests" component={ProjectRequestsScreen} options={{ headerShown: false }} />
-          <Stack.Screen name="ServiceProviderRequests" component={ServiceProviderRequestsScreen} options={{ headerShown: false }} />
-          <Stack.Screen name="ServiceProviderDashboard" component={ServiceProviderDashboardScreen} options={{ headerShown: false }} />
-          <Stack.Screen name="ManageServices" component={ManageServicesScreen} options={{ headerShown: true, title: 'Manage Services', headerStyle: { backgroundColor: '#000000' }, headerTintColor: '#FFFFFF' }} />
-          <Stack.Screen name="ManagePortfolio" component={ManagePortfolioScreen} options={{ headerShown: true, title: 'Portfolio', headerStyle: { backgroundColor: '#000000' }, headerTintColor: '#FFFFFF' }} />
-          <Stack.Screen name="ProviderEarnings" component={ProviderEarningsScreen} options={{ headerShown: false }} />
-          <Stack.Screen name="SimpleEarnings" component={SimpleEarningsScreen} options={{ headerShown: false }} />
-          <Stack.Screen name="ProjectRequestDetails" component={ProjectRequestDetailsScreen} options={{ headerShown: false }} />
-          <Stack.Screen name="PaymentScreen" component={PaymentScreen} options={{ headerShown: false }} />
-          <Stack.Screen name="Delivery" component={DeliveryScreen} options={{ headerShown: false }} />
-          <Stack.Screen name="MyOrders" component={MyOrdersScreen} options={{ headerShown: false }} />
-          <Stack.Screen name="WorkSubmissionScreen" component={WorkSubmissionScreen} options={{ headerShown: false }} />
-          <Stack.Screen name="FileTransferPortalScreen" component={FileTransferPortalScreen} options={{ headerShown: false }} />
-          <Stack.Screen name="PaymentReceiptScreen" component={PaymentReceiptScreen} options={{ headerShown: false }} />
-          <Stack.Screen name="ProjectSubmission" component={ProjectSubmissionScreen} options={{ headerShown: true, title: 'Submit Work', headerStyle: { backgroundColor: '#000000' }, headerTintColor: '#FFFFFF' }} />
-          <Stack.Screen name="ClientDelivery" component={ClientDeliveryScreen} options={{ headerShown: true, title: 'Project Delivery', headerStyle: { backgroundColor: '#000000' }, headerTintColor: '#FFFFFF' }} />
-          <Stack.Screen name="ClientDeliveryList" component={ClientDeliveryListScreen} options={{ headerShown: false }} />
-          <Stack.Screen name="DeliveryPreview" component={DeliveryPreviewScreen} options={{ headerShown: false }} />
-          <Stack.Screen name="NewWorkSubmission" component={NewWorkSubmissionScreen} options={{ headerShown: false }} />
-          <Stack.Screen name="SubmitWork" component={SubmitWorkScreen} options={{ headerShown: false }} />
-          <Stack.Screen name="ClientWorkView" component={ClientWorkViewScreen} options={{ headerShown: false }} />
-          <Stack.Screen name="RequestRevision" component={RequestRevisionScreen} options={{ headerShown: false }} />
-        </>
-      )}
-      {(featureFlags.LEGACY_INVESTMENT_UI || featureFlags.PAPER_TRADING_ENABLED) && (
-        <>
-          <Stack.Screen name="CampaignBrowse" component={CampaignBrowseScreen} options={{ headerShown: false }} />
-          <Stack.Screen name="CampaignDetail" component={CampaignDetailScreen} options={{ headerShown: false }} />
-          <Stack.Screen name="InvestorDashboard" component={InvestorDashboardScreen} options={{ headerShown: false }} />
-        </>
-      )}
-      {featureFlags.LEGACY_INVESTMENT_UI && (
-        <Stack.Screen name="SharePurchase" component={SharePurchaseScreen} options={{ headerShown: false }} />
       )}
     </Stack.Navigator>
   );
@@ -1152,16 +883,6 @@ function AuthStack() {
         options={{ headerShown: false }}
       />
       <Stack.Screen 
-        name="ServiceProviderOnboarding" 
-        component={ServiceProviderOnboardingScreen}
-        options={{ headerShown: false }}
-      />
-      <Stack.Screen 
-        name="ServiceProviderOnboardingComplete" 
-        component={ServiceProviderOnboardingCompleteScreen}
-        options={{ headerShown: false }}
-      />
-      <Stack.Screen 
         name="Main" 
         component={MainStack}
         options={{ headerShown: false }}
@@ -1233,7 +954,8 @@ function AppContent() {
   console.log('🚦 Rendering navigation:', isAuthenticated ? (needsOnboarding ? '🆕 Onboarding' : '✅ MainStack') : '🔐 AuthStack');
 
   // Universal Links + Deep linking configuration for password reset
-  const linking = {
+  // Untyped navigators can't infer the param list, so type the linking config loosely.
+  const linking: React.ComponentProps<typeof NavigationContainer>['linking'] = {
     prefixes: [
       'musistash://', 
       'https://musistash.com',
@@ -1382,18 +1104,6 @@ export default function App() {
       try {
         console.log('🚀 Initializing MusiStash app...');
         
-        // Initialize our production Stripe Payment Service (mobile only)
-        if (Platform.OS !== 'web' && StripePaymentService) {
-          const stripeReady = await StripePaymentService.initialize();
-          if (stripeReady) {
-            console.log('✅ Stripe Payment Service initialized');
-          } else {
-            console.warn('⚠️ Stripe Payment Service initialization failed');
-          }
-        } else {
-          console.log('ℹ️ Skipping Stripe initialization for web platform');
-        }
-        
         // Preload approved artists for fast browsing
         console.log('🚀 Preloading approved artists on app startup...');
         await ApprovedArtistsService.preloadApprovedArtists();
@@ -1428,14 +1138,12 @@ export default function App() {
     <ErrorBoundary>
       <SafeAreaProvider>
         <PaperProvider>
-          <StripeProvider>
-            <AuthProvider>
-              <AnimatedSplash isReady={appReady}>
-                <AppContent />
-              </AnimatedSplash>
-              <StatusBar style="light" />
-            </AuthProvider>
-          </StripeProvider>
+          <AuthProvider>
+            <AnimatedSplash isReady={appReady}>
+              <AppContent />
+            </AnimatedSplash>
+            <StatusBar style="light" />
+          </AuthProvider>
         </PaperProvider>
       </SafeAreaProvider>
     </ErrorBoundary>
@@ -1443,58 +1151,50 @@ export default function App() {
 }
 
 const styles = StyleSheet.create({
-  // Simplified header - Figma style
+  // Minimal header — avatar / title / bell
   headerContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: '#000000',
+    backgroundColor: '#080A0D',
     paddingHorizontal: 16,
-    paddingBottom: 12,
-    minHeight: 60,
-    borderBottomWidth: 0.5,
-    borderBottomColor: '#262626',
+    paddingBottom: 10,
   },
-  headerLeft: {
+  headerTitle: {
     flex: 1,
+    fontSize: 17,
+    fontWeight: '600',
+    color: '#F5F3EF',
+    letterSpacing: -0.2,
+    textAlign: 'center',
+  },
+  headerAvatarButton: {
+    width: 44,
+    height: 44,
     alignItems: 'flex-start',
     justifyContent: 'center',
   },
-  headerCenter: {
-    flex: 2,
+  headerAvatar: {
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+  },
+  headerAvatarFallback: {
+    backgroundColor: '#101318',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.14)',
     alignItems: 'center',
     justifyContent: 'center',
   },
-  headerRight: {
-    flex: 1,
+  headerAvatarInitial: {
+    color: '#F5F3EF',
+    fontSize: 13,
+    fontWeight: '600',
+  },
+  headerIconButton: {
+    width: 44,
+    height: 44,
     alignItems: 'flex-end',
-    justifyContent: 'center',
-  },
-  headerTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#FFFFFF',
-    letterSpacing: -0.3,
-    textAlign: 'center',
-  },
-  headerLogo: {
-    width: 150,
-    height: 38,
-  },
-  headerSubtitle: {
-    fontSize: 12,
-    color: '#6B7280',
-    marginTop: 2,
-    textAlign: 'center',
-  },
-  menuButton: {
-    padding: 8,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  messageButton: {
-    padding: 8,
-    alignItems: 'center',
     justifyContent: 'center',
   },
   
