@@ -140,7 +140,8 @@ export default function ProjectDetailScreen({
         notional: amount,
       });
       setPaperBalance(result.wallet.availableBalance);
-      await artistProjectService.updateBacking(project.id, amount, true);
+      // Backing totals are updated atomically inside rpc_open_paper_position;
+      // reflect it optimistically here.
       setProject((prev) =>
         prev
           ? {

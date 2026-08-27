@@ -72,23 +72,14 @@ export const artistExperienceService = {
       artistData?: any;
     },
   ): Promise<LoadedArtistExperience | null> {
-    // Demo shortcut
-    if (params.artistId === KALEB_ARTIST_ID || params.artistId === 'kaleb') {
-      const projects = await artistProjectService.listForArtist(KALEB_ARTIST_ID);
-      return {
-        artist: {
-          ...kalebArtist,
-          currentProject: projects[0]
-            ? toSummary(projects[0])
-            : kalebArtist.currentProject,
-        },
-        userId: 'demo_kaleb',
-        isOwner: false,
-        projects: projects.length ? projects : [],
-      };
-    }
+    // Legacy alias — the old string id still ships in a few deep links.
+    const artistId =
+      params.artistId === 'kaleb' || params.artistId === 'artist_kaleb'
+        ? KALEB_ARTIST_ID
+        : params.artistId;
 
     let row: any = params.artistData;
+    params = { ...params, artistId };
 
     if (!row?.artist_name) {
       if (params.artistId) {
@@ -137,7 +128,11 @@ export const artistExperienceService = {
       posts = data || [];
     }
 
-    const popularTracks = postsToTracks(posts, avatarUrl);
+    let popularTracks = postsToTracks(posts, avatarUrl);
+    // The seeded Kaleb demo has no posts — keep its curated track list.
+    if (popularTracks.length === 0 && row.id === KALEB_ARTIST_ID) {
+      popularTracks = kalebArtist.popularTracks;
+    }
     const projects = await artistProjectService.listForArtist(row.id);
     const current = projects[0];
 
@@ -150,7 +145,7 @@ export const artistExperienceService = {
       monthlyListeners: Number(row.monthly_listeners) || 0,
       heroImageUrl: profileUrl,
       bio: row.bio || row.biography || undefined,
-      accentColor: '#8B5CF6',
+      accentColor: '#4B9CD3',
       popularTracks,
       currentProject: current ? toSummary(current) : undefined,
     };

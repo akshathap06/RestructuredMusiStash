@@ -1,7 +1,6 @@
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { supabase } from '../../../lib/supabase';
 
 const INITIAL_GRANT = 10_000;
-const INITIAL_UNIT_PRICE = 1.0;
 
 export type PaperWallet = {
   userId: string;
@@ -63,237 +62,263 @@ export type PortfolioHistoryPoint = {
 
 export type HistoryRange = '1D' | '1W' | '1M' | '3M' | '1Y' | 'ALL';
 
-const walletKey = (userId: string) => `@ms/paper_wallet_${userId}`;
-const positionsKey = (userId: string) => `@ms/paper_positions_${userId}`;
-const transactionsKey = (userId: string) => `@ms/paper_transactions_${userId}`;
+// ---------------------------------------------------------------------------
+// Row shapes coming back from Supabase (snake_case) + mappers to the public
+// camelCase types above, which the screens already consume.
+// ---------------------------------------------------------------------------
+type WalletRow = {
+  user_id: string;
+  balance: number | string;
+  created_at: string;
+  updated_at: string;
+};
 
-function nowIso(): string {
-  return new Date().toISOString();
+type PositionRow = {
+  id: string;
+  user_id: string;
+  project_id: string;
+  amount: number | string;
+  shares: number | string;
+  entry_share_price: number | string;
+  status: PaperPosition['status'];
+  created_at: string;
+  artist_projects?: {
+    title: string | null;
+    current_paper_share_price: number | string | null;
+    artist_profiles?: { artist_name: string | null; name: string | null } | null;
+  } | null;
+};
+
+type TransactionRow = {
+  id: string;
+  user_id: string;
+  project_id: string | null;
+  type: PaperTransactionType;
+  amount: number | string;
+  balance_after: number | string | null;
+  created_at: string;
+};
+
+const num = (v: number | string | null | undefined): number => {
+  const n = typeof v === 'string' ? parseFloat(v) : v ?? 0;
+  return Number.isFinite(n as number) ? (n as number) : 0;
+};
+
+function mapWallet(row: WalletRow): PaperWallet {
+  return {
+    userId: row.user_id,
+    availableBalance: num(row.balance),
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  };
 }
 
-function makeId(prefix: string): string {
-  return `${prefix}_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;
+function mapPosition(row: PositionRow): PaperPosition {
+  const project = row.artist_projects ?? null;
+  const artist = project?.artist_profiles ?? null;
+  const currentUnitPrice = num(project?.current_paper_share_price) || num(row.entry_share_price);
+  return {
+    id: row.id,
+    userId: row.user_id,
+    projectId: row.project_id,
+    projectTitle: project?.title ?? 'Paper project',
+    artistName: artist?.artist_name ?? artist?.name ?? 'Artist',
+    units: num(row.shares),
+    costBasis: num(row.amount),
+    unitPriceAtOpen: num(row.entry_share_price),
+    currentUnitPrice,
+    status: row.status ?? 'open',
+    openedAt: row.created_at,
+  };
 }
 
-async function readJson<T>(key: string, fallback: T): Promise<T> {
-  try {
-    const raw = await AsyncStorage.getItem(key);
-    if (!raw) return fallback;
-    return JSON.parse(raw) as T;
-  } catch {
-    return fallback;
-  }
+function mapTransaction(row: TransactionRow): PaperTransaction {
+  return {
+    id: row.id,
+    userId: row.user_id,
+    type: row.type,
+    amount: num(row.amount),
+    projectId: row.project_id ?? undefined,
+    createdAt: row.created_at,
+    meta: row.balance_after != null ? { balanceAfter: num(row.balance_after) } : undefined,
+  };
 }
 
-async function writeJson(key: string, value: unknown): Promise<void> {
-  await AsyncStorage.setItem(key, JSON.stringify(value));
-}
+const POSITION_SELECT =
+  '*, artist_projects(title, current_paper_share_price, artist_profiles(artist_name, name))';
+
+// Query window (ms) for portfolio history by range.
+const DAY = 24 * 60 * 60 * 1000;
+const RANGE_START_MS: Record<HistoryRange, number> = {
+  '1D': DAY,
+  '1W': 7 * DAY,
+  '1M': 30 * DAY,
+  '3M': 90 * DAY,
+  '1Y': 365 * DAY,
+  ALL: 10 * 365 * DAY,
+};
+
+// Re-snapshot on load if the newest snapshot is older than this.
+const SNAPSHOT_STALE_MS = 12 * 60 * 60 * 1000;
 
 class PaperWalletService {
   /**
-   * Local AsyncStorage ledger until DB migrations land.
-   * Never calls Stripe — paper simulation only.
+   * Supabase-backed paper wallet. Money-mutating operations go through
+   * SECURITY DEFINER RPCs so balance / positions / ledger / project totals /
+   * valuation marks / portfolio snapshots stay consistent. Simulation only —
+   * never touches real money or Stripe.
    */
-  async ensureWallet(userId: string): Promise<PaperWallet> {
-    const grantKey = `grant:${userId}`;
-    const txs = await this.getTransactions(userId);
-    const alreadyGranted = txs.some((t) => t.idempotencyKey === grantKey);
-    const existing = await this.getWallet(userId);
-
-    if (alreadyGranted) {
-      if (existing) return existing;
-      const balance = txs.reduce((sum, t) => sum + t.amount, 0);
-      const createdAt = nowIso();
-      const rebuilt: PaperWallet = {
-        userId,
-        availableBalance: Math.max(0, balance),
-        createdAt,
-        updatedAt: createdAt,
-      };
-      await writeJson(walletKey(userId), rebuilt);
-      return rebuilt;
-    }
-
-    // Wallet already present without grant marker — do not credit again.
-    if (existing) {
-      return existing;
-    }
-
-    const createdAt = nowIso();
-    const wallet: PaperWallet = {
-      userId,
-      availableBalance: INITIAL_GRANT,
-      createdAt,
-      updatedAt: createdAt,
-    };
-
-    const grantTx: PaperTransaction = {
-      id: makeId('tx'),
-      userId,
-      type: 'initial_grant',
-      amount: INITIAL_GRANT,
-      idempotencyKey: grantKey,
-      createdAt,
-      meta: { label: 'Initial paper grant' },
-    };
-
-    await writeJson(walletKey(userId), wallet);
-    await writeJson(transactionsKey(userId), [...txs, grantTx]);
-    await writeJson(positionsKey(userId), []);
-
-    return wallet;
+  async ensureWallet(_userId: string): Promise<PaperWallet> {
+    const { data, error } = await supabase.rpc('rpc_ensure_paper_wallet');
+    if (error) throw new Error(error.message);
+    if (!data) throw new Error('Could not load paper wallet');
+    return mapWallet(data as WalletRow);
   }
 
   async getWallet(userId: string): Promise<PaperWallet | null> {
-    return readJson<PaperWallet | null>(walletKey(userId), null);
+    const { data, error } = await supabase
+      .from('paper_wallets')
+      .select('*')
+      .eq('user_id', userId)
+      .maybeSingle();
+    if (error) throw new Error(error.message);
+    return data ? mapWallet(data as WalletRow) : null;
   }
 
   async getPositions(userId: string): Promise<PaperPosition[]> {
-    return readJson<PaperPosition[]>(positionsKey(userId), []);
+    const { data, error } = await supabase
+      .from('paper_positions')
+      .select(POSITION_SELECT)
+      .eq('user_id', userId)
+      .eq('status', 'open')
+      .order('created_at', { ascending: false });
+    if (error) throw new Error(error.message);
+    return (data as PositionRow[] | null)?.map(mapPosition) ?? [];
   }
 
   async getTransactions(userId: string): Promise<PaperTransaction[]> {
-    return readJson<PaperTransaction[]>(transactionsKey(userId), []);
+    const { data, error } = await supabase
+      .from('paper_transactions')
+      .select('*')
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false });
+    if (error) throw new Error(error.message);
+    return (data as TransactionRow[] | null)?.map(mapTransaction) ?? [];
   }
 
   async openPosition(
-    userId: string,
+    _userId: string,
     input: OpenPositionInput
   ): Promise<{ wallet: PaperWallet; position: PaperPosition; transaction: PaperTransaction }> {
-    const { projectId, projectTitle, artistName, notional } = input;
-
+    const { projectId, notional } = input;
     if (!(notional > 0)) {
       throw new Error('Notional must be greater than zero');
     }
 
-    const wallet = await this.ensureWallet(userId);
-    if (wallet.availableBalance < notional) {
-      throw new Error('Insufficient paper balance');
+    const { data, error } = await supabase.rpc('rpc_open_paper_position', {
+      p_project_id: projectId,
+      p_amount: notional,
+    });
+    if (error) {
+      // Surface the friendly messages raised by the RPC verbatim.
+      throw new Error(error.message || 'Could not open paper position');
     }
 
-    const unitPrice = INITIAL_UNIT_PRICE;
-    const units = notional / unitPrice;
-    const createdAt = nowIso();
-
-    const debitTx: PaperTransaction = {
-      id: makeId('tx'),
-      userId,
-      type: 'open_position',
-      amount: -notional,
-      projectId,
-      createdAt,
-      meta: { projectTitle, artistName, units, unitPrice },
+    const payload = data as {
+      wallet: WalletRow;
+      position: PositionRow;
+      transaction: TransactionRow;
     };
+    const position = mapPosition(payload.position);
+    // The RPC returns the raw position row without the joined project; fill the
+    // display fields from the caller's input so the UI has names immediately.
+    position.projectTitle = input.projectTitle || position.projectTitle;
+    position.artistName = input.artistName || position.artistName;
 
-    const positions = await this.getPositions(userId);
-    const existingIdx = positions.findIndex(
-      (p) => p.projectId === projectId && p.status === 'open'
-    );
-
-    let position: PaperPosition;
-    if (existingIdx >= 0) {
-      const prev = positions[existingIdx];
-      const mergedCost = prev.costBasis + notional;
-      const mergedUnits = prev.units + units;
-      position = {
-        ...prev,
-        projectTitle,
-        artistName,
-        units: mergedUnits,
-        costBasis: mergedCost,
-        unitPriceAtOpen: mergedCost / mergedUnits,
-        currentUnitPrice: unitPrice,
-      };
-      positions[existingIdx] = position;
-    } else {
-      position = {
-        id: makeId('pos'),
-        userId,
-        projectId,
-        projectTitle,
-        artistName,
-        units,
-        costBasis: notional,
-        unitPriceAtOpen: unitPrice,
-        currentUnitPrice: unitPrice,
-        status: 'open',
-        openedAt: createdAt,
-      };
-      positions.push(position);
-    }
-
-    const updatedWallet: PaperWallet = {
-      ...wallet,
-      availableBalance: wallet.availableBalance - notional,
-      updatedAt: createdAt,
+    return {
+      wallet: mapWallet(payload.wallet),
+      position,
+      transaction: mapTransaction(payload.transaction),
     };
-
-    const txs = await this.getTransactions(userId);
-    await writeJson(walletKey(userId), updatedWallet);
-    await writeJson(positionsKey(userId), positions);
-    await writeJson(transactionsKey(userId), [...txs, debitTx]);
-
-    return { wallet: updatedWallet, position, transaction: debitTx };
   }
 
   async getPortfolioSummary(userId: string): Promise<PortfolioSummary> {
     const wallet = await this.ensureWallet(userId);
-    const positions = (await this.getPositions(userId)).filter((p) => p.status === 'open');
+    const positions = await this.getPositions(userId);
     const positionsValue = positions.reduce(
       (sum, p) => sum + p.units * p.currentUnitPrice,
       0
     );
     const cash = wallet.availableBalance;
+
     return {
       cash,
       positionsValue,
       total: cash + positionsValue,
-      dayChangePct: 0,
+      dayChangePct: await this.dayChangePct(userId, cash + positionsValue),
     };
+  }
+
+  private async dayChangePct(userId: string, currentTotal: number): Promise<number> {
+    const { data } = await supabase
+      .from('paper_portfolio_snapshots')
+      .select('value, recorded_at')
+      .eq('user_id', userId)
+      .gte('recorded_at', new Date(Date.now() - DAY).toISOString())
+      .order('recorded_at', { ascending: true })
+      .limit(1);
+    const first = (data as { value: number | string }[] | null)?.[0];
+    if (!first) return 0;
+    const base = num(first.value);
+    if (base <= 0) return 0;
+    return ((currentTotal - base) / base) * 100;
   }
 
   async getPortfolioHistory(
     userId: string,
     range: HistoryRange
   ): Promise<PortfolioHistoryPoint[]> {
-    const summary = await this.getPortfolioSummary(userId);
-    const total = summary.total;
-    const pointCount = RANGE_POINTS[range];
-    const spanMs = RANGE_SPAN_MS[range];
-    const end = Date.now();
-    const start = end - spanMs;
+    const since = new Date(Date.now() - RANGE_START_MS[range]).toISOString();
+    let { data, error } = await supabase
+      .from('paper_portfolio_snapshots')
+      .select('value, recorded_at')
+      .eq('user_id', userId)
+      .gte('recorded_at', since)
+      .order('recorded_at', { ascending: true });
+    if (error) throw new Error(error.message);
 
-    // Synthetic placeholder series around current total until real snapshots exist.
-    const points: PortfolioHistoryPoint[] = [];
-    for (let i = 0; i < pointCount; i++) {
-      const t = start + (spanMs * i) / Math.max(pointCount - 1, 1);
-      const progress = i / Math.max(pointCount - 1, 1);
-      const wobble = Math.sin(progress * Math.PI * 2) * 0.012 + (progress - 0.5) * 0.02;
-      const v = Math.max(0, total * (1 + wobble * (total > 0 ? 1 : 0)));
-      points.push({ t, v: i === pointCount - 1 ? total : v });
+    let rows = (data as { value: number | string; recorded_at: string }[] | null) ?? [];
+
+    // Opportunistically record a fresh snapshot if the newest one is stale, so
+    // the chart keeps moving even without a cron.
+    const newest = rows[rows.length - 1];
+    const stale =
+      !newest || Date.now() - new Date(newest.recorded_at).getTime() > SNAPSHOT_STALE_MS;
+    if (stale) {
+      const { data: total } = await supabase.rpc('rpc_snapshot_portfolio');
+      if (typeof total === 'number' || typeof total === 'string') {
+        rows = [...rows, { value: total, recorded_at: new Date().toISOString() }];
+      }
     }
-    return points;
+
+    const points = rows.map((r) => ({
+      t: new Date(r.recorded_at).getTime(),
+      v: num(r.value),
+    }));
+
+    if (points.length >= 2) return points;
+
+    // Not enough marks yet — a flat 2-point line at the current total.
+    const summary = await this.getPortfolioSummary(userId);
+    const now = Date.now();
+    return [
+      { t: now - RANGE_START_MS[range], v: summary.total },
+      { t: now, v: summary.total },
+    ];
   }
 }
 
-const RANGE_POINTS: Record<HistoryRange, number> = {
-  '1D': 24,
-  '1W': 28,
-  '1M': 30,
-  '3M': 36,
-  '1Y': 52,
-  ALL: 48,
-};
-
-const DAY = 24 * 60 * 60 * 1000;
-const RANGE_SPAN_MS: Record<HistoryRange, number> = {
-  '1D': DAY,
-  '1W': 7 * DAY,
-  '1M': 30 * DAY,
-  '3M': 90 * DAY,
-  '1Y': 365 * DAY,
-  ALL: 365 * DAY,
-};
-
 export const paperWalletService = new PaperWalletService();
 export default paperWalletService;
+
+export { INITIAL_GRANT };

@@ -7,8 +7,9 @@ const ART = {
   track: 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=400&q=80',
 };
 
-export const KALEB_PROJECT_ID = 'project_midnight_static';
-export const KALEB_ARTIST_ID = 'artist_kaleb';
+// Real seeded rows — see supabase/migrations/20260827000004_seed_kaleb.sql
+export const KALEB_PROJECT_ID = '22222222-2222-4222-8222-222222222222';
+export const KALEB_ARTIST_ID = '11111111-1111-4111-8111-111111111111';
 
 export const kalebProject: Project = {
   id: KALEB_PROJECT_ID,
@@ -85,7 +86,7 @@ export const kalebArtist: Artist = {
   monthlyListeners: 248000,
   heroImageUrl: ART.hero,
   bio: 'Music for the hours when the city is quiet and your thoughts aren’t.',
-  accentColor: '#8B5CF6',
+  accentColor: '#4B9CD3',
   popularTracks: [
     {
       id: 't1',
