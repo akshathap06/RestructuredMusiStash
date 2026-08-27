@@ -13,6 +13,9 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { useAuth } from '../../../contexts/AuthContext';
 import { NotificationService, ProjectNotification } from '../../../services/notificationService';
+import { MusiStashTheme } from '../../../styles/theme';
+
+const c = MusiStashTheme.colors;
 
 export const NotificationsScreen: React.FC = () => {
   const { user } = useAuth();
@@ -94,24 +97,21 @@ export const NotificationsScreen: React.FC = () => {
 
   const getNotificationIcon = (type: string) => {
     switch (type) {
-      case 'request_accepted':
-        return { name: 'checkmark-circle', color: '#3B82F6' };
-      case 'price_proposed':
-        return { name: 'cash', color: '#F59E0B' };
-      case 'agreement_created':
-        return { name: 'document-text', color: '#3B82F6' };
-      case 'payment_received':
-        return { name: 'card', color: '#3B82F6' };
-      case 'work_submitted':
-        return { name: 'cloud-upload', color: '#3B82F6' };
-      case 'like':
-        return { name: 'heart', color: '#EF4444' };
-      case 'comment':
-        return { name: 'chatbubble', color: '#3B82F6' };
+      case 'paper_backed':
+        return { name: 'trending-up', color: c.accentLight };
+      case 'project_update':
+      case 'project_milestone':
+        return { name: 'flag', color: c.accentLight };
+      case 'waitlist':
+        return { name: 'mail', color: c.accentLight };
       case 'follow':
-        return { name: 'person-add', color: '#3B82F6' };
+        return { name: 'person-add', color: c.accentLight };
+      case 'comment':
+        return { name: 'chatbubble', color: c.accentLight };
+      case 'like':
+        return { name: 'heart', color: c.negative };
       default:
-        return { name: 'notifications', color: '#6B7280' };
+        return { name: 'notifications', color: c.textMuted };
     }
   };
 
@@ -159,7 +159,7 @@ export const NotificationsScreen: React.FC = () => {
               onPress={() => handleDeleteNotification(item.id)}
               hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
             >
-              <Ionicons name="close" size={16} color="#6B7280" />
+              <Ionicons name="close" size={16} color={c.textFaint} />
             </TouchableOpacity>
           </View>
         </View>
@@ -170,7 +170,7 @@ export const NotificationsScreen: React.FC = () => {
   const renderEmptyState = () => (
     <View style={styles.emptyState}>
       <View style={styles.emptyIconContainer}>
-        <Ionicons name="notifications-outline" size={48} color="#4B5563" />
+        <Ionicons name="notifications-outline" size={48} color={c.textFaint} />
       </View>
       <Text style={styles.emptyTitle}>No notifications yet</Text>
       <Text style={styles.emptyMessage}>
@@ -194,7 +194,7 @@ export const NotificationsScreen: React.FC = () => {
             style={styles.backButton}
             onPress={() => navigation.goBack()}
           >
-            <Ionicons name="chevron-back" size={24} color="#FFFFFF" />
+            <Ionicons name="chevron-back" size={24} color={c.textPrimary} />
           </TouchableOpacity>
           <View style={styles.headerCenter}>
             <Text style={styles.headerTitle}>Notifications</Text>
@@ -210,7 +210,7 @@ export const NotificationsScreen: React.FC = () => {
                 style={styles.markReadButton}
                 onPress={handleMarkAllAsRead}
               >
-                <Ionicons name="checkmark-done" size={22} color="#3B82F6" />
+                <Ionicons name="checkmark-done" size={22} color={c.accentLight} />
               </TouchableOpacity>
             )}
           </View>
@@ -225,7 +225,7 @@ export const NotificationsScreen: React.FC = () => {
           <RefreshControl
             refreshing={refreshing}
             onRefresh={handleRefresh}
-            tintColor="#3B82F6"
+            tintColor={c.accent}
           />
         }
         ListHeaderComponent={notifications.length > 0 ? renderHeader : null}
@@ -241,156 +241,109 @@ export const NotificationsScreen: React.FC = () => {
 };
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#000000',
-  },
+  container: { flex: 1, backgroundColor: c.background },
   header: {
-    backgroundColor: '#000000',
-    borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255, 255, 255, 0.1)',
+    backgroundColor: c.background,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: c.listDivider,
   },
   headerContent: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
     minHeight: 56,
   },
-  headerCenter: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
+  headerCenter: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   backButton: {
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: 'rgba(255, 255, 255, 0.08)',
+    backgroundColor: c.surface,
     justifyContent: 'center',
     alignItems: 'center',
   },
   headerTitle: {
-    color: '#FFFFFF',
-    fontSize: 20,
-    fontWeight: '700',
+    color: c.textPrimary,
+    fontFamily: 'Manrope_800ExtraBold',
+    fontSize: 18,
+    fontWeight: '800',
     letterSpacing: -0.3,
   },
-  headerRight: {
-    width: 40,
-    height: 40,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
+  headerRight: { width: 40, height: 40, justifyContent: 'center', alignItems: 'center' },
   unreadBadge: {
-    backgroundColor: '#3B82F6',
+    backgroundColor: c.accent,
     paddingHorizontal: 8,
     paddingVertical: 3,
-    borderRadius: 10,
-    minWidth: 24,
+    borderRadius: 999,
+    minWidth: 22,
     alignItems: 'center',
   },
   unreadBadgeText: {
-    color: '#FFFFFF',
-    fontSize: 12,
-    fontWeight: '700',
+    color: c.onAccent,
+    fontFamily: 'Manrope_800ExtraBold',
+    fontSize: 11,
+    fontWeight: '800',
   },
   markReadButton: {
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: 'rgba(59, 130, 246, 0.15)',
+    backgroundColor: c.accentTint,
     justifyContent: 'center',
     alignItems: 'center',
   },
-  listContainer: {
-    paddingBottom: 20,
-  },
-  emptyListContainer: {
-    flexGrow: 1,
-  },
-  listHeader: {
-    paddingHorizontal: 16,
-    paddingTop: 20,
-    paddingBottom: 12,
-  },
+  listContainer: { paddingBottom: 20 },
+  emptyListContainer: { flexGrow: 1 },
+  listHeader: { paddingHorizontal: 20, paddingTop: 20, paddingBottom: 12 },
   listHeaderText: {
-    color: '#6B7280',
-    fontSize: 13,
-    fontWeight: '600',
+    color: c.textFaint,
+    fontFamily: 'Manrope_700Bold',
+    fontSize: 11,
+    fontWeight: '700',
     textTransform: 'uppercase',
-    letterSpacing: 0.5,
+    letterSpacing: 1.6,
   },
   notificationItem: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    paddingVertical: 16,
-    paddingHorizontal: 16,
-    backgroundColor: '#000000',
-    marginHorizontal: 12,
-    marginBottom: 8,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.08)',
+    paddingVertical: 14,
+    paddingHorizontal: 20,
+    minHeight: 66,
   },
   notificationItemBorder: {
-    // No longer needed but keep for compatibility
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: c.listDivider,
   },
   iconContainer: {
-    width: 44,
-    height: 44,
-    borderRadius: 14,
+    width: 40,
+    height: 40,
+    borderRadius: 12,
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 12,
+    marginRight: 14,
   },
-  contentContainer: {
-    flex: 1,
-    flexDirection: 'row',
-  },
-  textContainer: {
-    flex: 1,
-    marginRight: 8,
-  },
+  contentContainer: { flex: 1, flexDirection: 'row' },
+  textContainer: { flex: 1, marginRight: 8 },
   title: {
-    color: '#9CA3AF',
-    fontSize: 15,
-    fontWeight: '500',
-    marginBottom: 4,
-    lineHeight: 20,
+    color: c.textMuted,
+    fontFamily: 'Manrope_700Bold',
+    fontSize: 14.5,
+    fontWeight: '700',
+    marginBottom: 3,
+    lineHeight: 19,
   },
-  titleUnread: {
-    color: '#FFFFFF',
-    fontWeight: '600',
-  },
-  message: {
-    color: '#6B7280',
-    fontSize: 14,
-    lineHeight: 20,
-    marginBottom: 6,
-  },
-  time: {
-    color: '#4B5563',
-    fontSize: 12,
-    fontWeight: '500',
-  },
-  rightSection: {
-    alignItems: 'center',
-    paddingTop: 4,
-    gap: 8,
-  },
-  unreadDot: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-    backgroundColor: '#3B82F6',
-  },
+  titleUnread: { color: c.textPrimary },
+  message: { color: c.textMuted, fontSize: 13, lineHeight: 18, marginBottom: 5 },
+  time: { color: c.textFaint, fontSize: 12 },
+  rightSection: { alignItems: 'center', paddingTop: 4, gap: 8 },
+  unreadDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: c.accentLight },
   deleteButton: {
     width: 28,
     height: 28,
     borderRadius: 14,
-    backgroundColor: 'rgba(107, 114, 128, 0.15)',
+    backgroundColor: c.surface,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -402,27 +355,21 @@ const styles = StyleSheet.create({
     paddingTop: 60,
   },
   emptyIconContainer: {
-    width: 88,
-    height: 88,
-    borderRadius: 24,
-    backgroundColor: 'rgba(59, 130, 246, 0.1)',
-    borderWidth: 1,
-    borderColor: 'rgba(59, 130, 246, 0.2)',
+    width: 80,
+    height: 80,
+    borderRadius: 20,
+    backgroundColor: c.accentTint,
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 24,
   },
   emptyTitle: {
-    color: '#FFFFFF',
-    fontSize: 20,
-    fontWeight: '700',
+    color: c.textPrimary,
+    fontFamily: 'Manrope_800ExtraBold',
+    fontSize: 19,
+    fontWeight: '800',
     marginBottom: 10,
     letterSpacing: -0.3,
   },
-  emptyMessage: {
-    color: '#6B7280',
-    fontSize: 15,
-    textAlign: 'center',
-    lineHeight: 22,
-  },
+  emptyMessage: { color: c.textMuted, fontSize: 14, textAlign: 'center', lineHeight: 21 },
 });

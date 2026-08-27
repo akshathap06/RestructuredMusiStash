@@ -211,7 +211,7 @@ export default function WaitlistScreen({ navigation, route }: any) {
         >
           <View style={[styles.checkbox, consent && styles.checkboxChecked]}>
             {consent && (
-              <Ionicons name="checkmark" size={14} color={MusiStashTheme.colors.white} />
+              <Ionicons name="checkmark" size={14} color={MusiStashTheme.colors.onAccent} />
             )}
           </View>
           <Text style={styles.consentText}>
@@ -227,7 +227,7 @@ export default function WaitlistScreen({ navigation, route }: any) {
           disabled={!consent || submitting}
         >
           {submitting ? (
-            <ActivityIndicator color={MusiStashTheme.colors.white} />
+            <ActivityIndicator color={MusiStashTheme.colors.onAccent} />
           ) : (
             <Text style={styles.primaryButtonText}>Join waitlist</Text>
           )}
@@ -306,14 +306,14 @@ const styles = StyleSheet.create({
   },
   roleChipSelected: {
     borderColor: MusiStashTheme.colors.accent,
-    backgroundColor: 'rgba(139, 92, 246, 0.15)',
+    backgroundColor: MusiStashTheme.colors.accent,
   },
   roleChipText: {
     ...MusiStashTheme.typography.button,
     color: MusiStashTheme.colors.mutedForeground,
   },
   roleChipTextSelected: {
-    color: MusiStashTheme.colors.accentLight,
+    color: MusiStashTheme.colors.onAccent,
   },
   consentRow: {
     flexDirection: 'row',
@@ -359,7 +359,7 @@ const styles = StyleSheet.create({
   },
   primaryButtonText: {
     ...MusiStashTheme.typography.button,
-    color: MusiStashTheme.colors.white,
+    color: MusiStashTheme.colors.onAccent,
   },
   successBody: {
     flex: 1,
