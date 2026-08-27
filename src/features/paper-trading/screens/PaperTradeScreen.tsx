@@ -14,7 +14,7 @@ import { useAuth } from '../../auth/AuthContext';
 import { PaperDisclosure } from '../components/PaperDisclosure';
 import { paperWalletService } from '../services/paperWalletService';
 
-const VIOLET = '#8B5CF6';
+const VIOLET = '#4B9CD3';
 const PRESETS = [100, 250, 500, 1000, 2500] as const;
 
 type Step = 'amount' | 'review' | 'success';
@@ -301,7 +301,7 @@ const styles = StyleSheet.create({
   },
   presetChipActive: {
     borderColor: VIOLET,
-    backgroundColor: 'rgba(139, 92, 246, 0.2)',
+    backgroundColor: 'rgba(75, 156, 211, 0.2)',
   },
   presetText: {
     color: '#B5B5BA',

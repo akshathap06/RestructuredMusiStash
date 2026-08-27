@@ -253,7 +253,7 @@ export default function OpenSourceLicensesScreen({ navigation }: any) {
         {/* Hero Section */}
         <View style={styles.heroSection}>
           <View style={styles.heroIconContainer}>
-            <Ionicons name="code" size={40} color="#8B5CF6" />
+            <Ionicons name="code" size={40} color="#4B9CD3" />
           </View>
           <Text style={styles.heroTitle}>Open Source Licenses</Text>
           <Text style={styles.heroSubtitle}>
@@ -263,7 +263,7 @@ export default function OpenSourceLicensesScreen({ navigation }: any) {
 
         {/* License Notice */}
         <View style={styles.noticeCard}>
-          <Ionicons name="information-circle" size={24} color="#8B5CF6" />
+          <Ionicons name="information-circle" size={24} color="#4B9CD3" />
           <Text style={styles.noticeText}>
             This app uses open source software. Each library is listed below with its license information. Click on any library to view details.
           </Text>
@@ -336,7 +336,7 @@ const styles = StyleSheet.create({
     width: 80,
     height: 80,
     borderRadius: 20,
-    backgroundColor: 'rgba(139, 92, 246, 0.15)',
+    backgroundColor: 'rgba(75, 156, 211, 0.15)',
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 20,
@@ -357,12 +357,12 @@ const styles = StyleSheet.create({
   },
   noticeCard: {
     flexDirection: 'row',
-    backgroundColor: 'rgba(139, 92, 246, 0.1)',
+    backgroundColor: 'rgba(75, 156, 211, 0.1)',
     borderRadius: 16,
     padding: 16,
     marginBottom: 24,
     borderWidth: 1,
-    borderColor: 'rgba(139, 92, 246, 0.2)',
+    borderColor: 'rgba(75, 156, 211, 0.2)',
   },
   noticeText: {
     flex: 1,
@@ -425,7 +425,7 @@ const styles = StyleSheet.create({
   licenseValue: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#8B5CF6',
+    color: '#4B9CD3',
   },
   licenseDescription: {
     fontSize: 13,

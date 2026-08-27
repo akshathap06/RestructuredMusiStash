@@ -121,7 +121,7 @@ export default function HelpCenterScreen({ navigation }: any) {
               style={styles.quickLinkCard}
               onPress={() => navigation.navigate('TermsOfService')}
             >
-              <Ionicons name="document-text" size={24} color="#8B5CF6" />
+              <Ionicons name="document-text" size={24} color="#4B9CD3" />
               <Text style={styles.quickLinkText}>Terms of Service</Text>
             </TouchableOpacity>
             <TouchableOpacity 
