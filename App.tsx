@@ -261,8 +261,11 @@ function UniversalHeader({ navigation, title }: { navigation: any, title: string
         case 'Explore':
           navigation.navigate('MainTabs', { screen: 'Explore' });
           break;
-        case 'Create':
-          navigation.navigate('MainTabs', { screen: 'Create' });
+        case 'Search':
+          navigation.navigate('MainTabs', { screen: 'Search' });
+          break;
+        case 'CreateHub':
+          navigation.navigate('CreateHub');
           break;
         case 'BrowseArtists':
           navigation.navigate('BrowseArtists');
@@ -305,7 +308,7 @@ function UniversalHeader({ navigation, title }: { navigation: any, title: string
       accessibilityRole="button"
       accessibilityLabel={item.label}
     >
-      <Ionicons name={item.icon as any} size={20} color="#AAA8AE" />
+      <Ionicons name={item.icon as any} size={20} color="#9B9BA4" />
       <Text style={sidebarStyles.menuItemText}>{item.label}</Text>
     </TouchableOpacity>
   );
@@ -337,7 +340,7 @@ function UniversalHeader({ navigation, title }: { navigation: any, title: string
         accessibilityRole="button"
         accessibilityLabel="Notifications"
       >
-        <Ionicons name="notifications-outline" size={22} color="#AAA8AE" />
+        <Ionicons name="notifications-outline" size={22} color="#9B9BA4" />
       </TouchableOpacity>
 
       <Modal
@@ -377,7 +380,7 @@ function UniversalHeader({ navigation, title }: { navigation: any, title: string
                 {user?.email || ''}
               </Text>
             </View>
-            <Ionicons name="chevron-forward" size={16} color="#73717A" />
+            <Ionicons name="chevron-forward" size={16} color="#6A6A74" />
           </TouchableOpacity>
 
           <ScrollView
@@ -403,7 +406,7 @@ function UniversalHeader({ navigation, title }: { navigation: any, title: string
               accessibilityRole="button"
               accessibilityLabel="Log out"
             >
-              <Ionicons name="log-out-outline" size={20} color="#EF4444" />
+              <Ionicons name="log-out-outline" size={20} color="#FF6A5E" />
               <Text style={[sidebarStyles.menuItemText, sidebarStyles.menuItemTextDanger]}>Log out</Text>
             </TouchableOpacity>
 
@@ -449,14 +452,14 @@ const sidebarStyles = StyleSheet.create({
     borderRadius: 22,
   },
   accountAvatarFallback: {
-    backgroundColor: '#101318',
+    backgroundColor: '#15151A',
     borderWidth: 1,
     borderColor: 'rgba(255, 255, 255, 0.10)',
     alignItems: 'center',
     justifyContent: 'center',
   },
   accountAvatarInitial: {
-    color: '#F5F3EF',
+    color: '#F4F4F6',
     fontSize: 17,
     fontWeight: '600',
   },
@@ -467,12 +470,12 @@ const sidebarStyles = StyleSheet.create({
   accountName: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#F5F3EF',
+    color: '#F4F4F6',
     letterSpacing: -0.2,
   },
   accountEmail: {
     fontSize: 12,
-    color: '#73717A',
+    color: '#6A6A74',
     marginTop: 2,
   },
   scrollView: {
@@ -488,7 +491,7 @@ const sidebarStyles = StyleSheet.create({
   sectionLabel: {
     fontSize: 11,
     fontWeight: '600',
-    color: '#73717A',
+    color: '#6A6A74',
     letterSpacing: 1,
     marginTop: 12,
     marginBottom: 4,
@@ -504,11 +507,11 @@ const sidebarStyles = StyleSheet.create({
   menuItemText: {
     fontSize: 15,
     fontWeight: '500',
-    color: '#F5F3EF',
+    color: '#F4F4F6',
     flex: 1,
   },
   menuItemTextDanger: {
-    color: '#EF4444',
+    color: '#FF6A5E',
   },
   divider: {
     height: StyleSheet.hairlineWidth,
@@ -518,7 +521,7 @@ const sidebarStyles = StyleSheet.create({
   },
   versionText: {
     fontSize: 11,
-    color: '#73717A',
+    color: '#6A6A74',
     marginTop: 16,
     marginLeft: 20,
   },
@@ -602,86 +605,70 @@ function ProfileStackNavigator() {
   );
 }
 
-// Tab navigator for main authenticated screens
+// Tab navigator — "Paper Mobile": Explore · Search · Portfolio · You.
+// Route names kept (Explore/Search/Portfolio/Profile) so deep links, the menu
+// and getParent().navigate() calls stay valid; only the visible label changes.
 function MainTabs({ navigation: parentNavigation }: { navigation: any }) {
   const insets = useSafeAreaInsets();
-  
+
   return (
     <Tab.Navigator
       initialRouteName="Explore"
       screenOptions={({ route }) => ({
-        tabBarIcon: ({ focused, color, size }) => {
-          let iconName: keyof typeof Ionicons.glyphMap = 'home';
-
-          if (route.name === 'Explore') {
-            iconName = focused ? 'compass' : 'compass-outline';
-          } else if (route.name === 'Profile') {
-            iconName = focused ? 'person' : 'person-outline';
-          } else if (route.name === 'Portfolio') {
-            iconName = focused ? 'wallet' : 'wallet-outline';
-          } else if (route.name === 'Create') {
-            iconName = focused ? 'add-circle' : 'add-circle-outline';
-          }
-
+        tabBarIcon: ({ color, size }) => {
+          let iconName: keyof typeof Ionicons.glyphMap = 'ellipse-outline';
+          if (route.name === 'Explore') iconName = 'reorder-three-outline';
+          else if (route.name === 'Search') iconName = 'search-outline';
+          else if (route.name === 'Portfolio') iconName = 'stats-chart-outline';
+          else if (route.name === 'Profile') iconName = 'person-outline';
           return <Ionicons name={iconName} size={size} color={color} />;
         },
         tabBarStyle: {
-          backgroundColor: '#080A0D',
-          borderTopColor: 'rgba(255, 255, 255, 0.08)',
+          backgroundColor: '#0C0C0F',
+          borderTopColor: '#1C1C22',
           borderTopWidth: StyleSheet.hairlineWidth,
           paddingBottom: Math.max(insets.bottom, 8),
-          paddingTop: 6,
-          height: 58 + Math.max(insets.bottom, 8),
+          paddingTop: 8,
+          height: 60 + Math.max(insets.bottom, 8),
           paddingHorizontal: 8,
         },
-        tabBarActiveTintColor: '#F5F3EF',
-        tabBarInactiveTintColor: '#73717A',
+        tabBarActiveTintColor: '#8ECDF0',
+        tabBarInactiveTintColor: '#6A6A74',
         tabBarLabelStyle: {
-          fontSize: 11,
-          fontWeight: '600',
-          marginTop: 2,
+          fontFamily: 'Manrope_700Bold',
+          fontSize: 10.5,
+          letterSpacing: 0.2,
+          marginTop: 3,
         },
         headerShown: true,
-        lazy: false, // Don't lazy load tabs to maintain state
-        unmountOnBlur: false, // Keep screens mounted when switching tabs
+        lazy: false,
+        unmountOnBlur: false,
       })}
     >
-      <Tab.Screen
-        name="Portfolio"
-        component={PortfolioScreen}
-        options={({ navigation }) => ({
-          header: () => (
-            <UniversalHeader navigation={navigation} title="Portfolio" subtitle="Paper trading" />
-          ),
-        })}
-      />
       <Tab.Screen
         name="Explore"
         component={ExploreScreen}
         options={({ navigation }) => ({
-          header: () => (
-            <UniversalHeader navigation={navigation} title="Explore" subtitle="" />
-          ),
+          header: () => <UniversalHeader navigation={navigation} title="Explore" />,
         })}
         initialParams={{ parentNavigation }}
       />
       <Tab.Screen
-        name="Create"
-        component={CreateHubScreen}
+        name="Search"
+        component={SearchScreen}
+        options={{ headerShown: false }}
+      />
+      <Tab.Screen
+        name="Portfolio"
+        component={PortfolioScreen}
         options={({ navigation }) => ({
-          header: () => (
-            <UniversalHeader navigation={navigation} title="Create" subtitle="" />
-          ),
+          header: () => <UniversalHeader navigation={navigation} title="Portfolio" />,
         })}
       />
       <Tab.Screen
         name="Profile"
         component={ProfileStackNavigator}
-        options={({ navigation }) => ({
-          header: () => (
-            <UniversalHeader navigation={navigation} title="Profile" subtitle="" />
-          ),
-        })}
+        options={{ tabBarLabel: 'You', headerShown: false }}
       />
     </Tab.Navigator>
   );
@@ -723,8 +710,9 @@ function MainStack() {
         options={{
           headerShown: true,
           title: 'Paper trade',
-          headerStyle: { backgroundColor: '#070709' },
-          headerTintColor: '#FFFFFF',
+          headerStyle: { backgroundColor: '#0A0A0C' },
+          headerTintColor: '#F4F4F6',
+          headerTitleStyle: { fontFamily: 'Manrope_800ExtraBold' },
         }}
       />
       <Stack.Screen
@@ -733,13 +721,19 @@ function MainStack() {
         options={{ headerShown: false }}
       />
       <Stack.Screen
+        name="CreateHub"
+        component={CreateHubScreen}
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
         name="Waitlist"
         component={WaitlistScreen}
         options={{
           headerShown: true,
           title: 'Launch waitlist',
-          headerStyle: { backgroundColor: '#070709' },
-          headerTintColor: '#FFFFFF',
+          headerStyle: { backgroundColor: '#0A0A0C' },
+          headerTintColor: '#F4F4F6',
+          headerTitleStyle: { fontFamily: 'Manrope_800ExtraBold' },
         }}
       />
       <Stack.Screen
@@ -1001,10 +995,10 @@ function AppContent() {
         // When authenticated
         MainTabs: {
           screens: {
-            Portfolio: 'portfolio',
             Explore: 'explore',
+            Search: 'search',
+            Portfolio: 'portfolio',
             Profile: 'profile',
-            Create: 'create',
           }
         },
       },
@@ -1197,16 +1191,17 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: '#080A0D',
+    backgroundColor: '#0A0A0C',
     paddingHorizontal: 16,
     paddingBottom: 10,
   },
   headerTitle: {
     flex: 1,
+    fontFamily: 'Manrope_800ExtraBold',
     fontSize: 17,
-    fontWeight: '600',
-    color: '#F5F3EF',
-    letterSpacing: -0.2,
+    fontWeight: '800',
+    color: '#F4F4F6',
+    letterSpacing: -0.3,
     textAlign: 'center',
   },
   headerAvatarButton: {
@@ -1221,16 +1216,17 @@ const styles = StyleSheet.create({
     borderRadius: 15,
   },
   headerAvatarFallback: {
-    backgroundColor: '#101318',
+    backgroundColor: '#15151A',
     borderWidth: 1,
     borderColor: 'rgba(255, 255, 255, 0.14)',
     alignItems: 'center',
     justifyContent: 'center',
   },
   headerAvatarInitial: {
-    color: '#F5F3EF',
-    fontSize: 13,
-    fontWeight: '600',
+    color: '#F4F4F6',
+    fontFamily: 'Manrope_800ExtraBold',
+    fontSize: 12,
+    fontWeight: '800',
   },
   headerIconButton: {
     width: 44,
