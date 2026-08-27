@@ -56,12 +56,35 @@ export type ScenarioTarget = {
   label: string;
 };
 
+export type ProjectStatus =
+  | 'draft'
+  | 'funding'
+  | 'funded'
+  | 'active'
+  | 'completed'
+  | 'failed'
+  | 'cancelled';
+
+export type ProjectOutcome =
+  | 'funded_settled'
+  | 'failed_refund'
+  | 'cancelled_refund'
+  | null;
+
 export type AIAnalysis = {
   score: number;
   label: string;
   summary: string;
   factors: { label: string; score: number; explanation?: string }[];
   generatedAt?: string;
+  // Derived by the pricing/scoring engine (fn_project_scores):
+  resonanceScore?: number;
+  similarityScore?: number;
+  momentumScore?: number;
+  riskScore?: number;
+  projectedROI?: number;
+  confidence?: number;
+  explanation?: string;
 };
 
 export type Project = {
@@ -79,7 +102,17 @@ export type Project = {
   paperBackingTotal: number;
   paperBackerCount: number;
   daysRemaining: number;
+  /** Current MusiStash model price per unit. */
   currentPaperSharePrice: number;
+  initialPrice: number;
+  settlementPrice?: number | null;
+  status: ProjectStatus;
+  outcome?: ProjectOutcome;
+  termWeeks: number;
+  fundingDeadline?: string | null;
+  maturityDate?: string | null;
+  fundedAt?: string | null;
+  totalUnits?: number;
   scenarioTargets: ScenarioTarget[];
   deliverables: Deliverable[];
   useOfFunds: FundAllocation[];
@@ -93,4 +126,4 @@ export const PAPER_DISCLOSURE_SHORT =
   'SIMULATION ONLY · NO REAL MONEY OR OWNERSHIP';
 
 export const PAPER_DISCLOSURE_BODY =
-  'Paper trading simulation only. No real money, securities, ownership, or financial returns are being offered.';
+  'MusiStash Paper Trading uses simulated currency and simulated project values. No real securities or financial returns are being offered.';

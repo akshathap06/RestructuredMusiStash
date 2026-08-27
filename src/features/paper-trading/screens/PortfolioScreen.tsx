@@ -13,6 +13,9 @@ import { useAuth } from '../../auth/AuthContext';
 import { MusiStashTheme } from '../../../styles/theme';
 import { AppText, Eyebrow } from '../../../shared/components/ui';
 import { InteractiveLineChart, ChartPoint } from '../components/charts';
+import { positionPnl } from '../domain/pricing';
+import { statusLabel } from '../domain/projectLifecycle';
+import { analytics } from '../../../services/analytics';
 import {
   paperWalletService,
   HistoryRange,
@@ -26,7 +29,7 @@ const c = MusiStashTheme.colors;
 const RANGES: HistoryRange[] = ['1W', '1M', '3M', '1Y', 'ALL'];
 
 const DISCLOSURE =
-  'Paper trading simulation only. No real money, securities, ownership, or financial returns are being offered.';
+  'MusiStash Paper Trading uses simulated currency and simulated project values. No real securities or financial returns are being offered.';
 
 type NavLike = {
   navigate?: (name: string, params?: Record<string, unknown>) => void;
@@ -65,6 +68,7 @@ export default function PortfolioScreen({ navigation }: { navigation?: NavLike }
   const [range, setRange] = useState<HistoryRange>('1M');
   const [summary, setSummary] = useState<PortfolioSummary | null>(null);
   const [positions, setPositions] = useState<PaperPosition[]>([]);
+  const [closed, setClosed] = useState<PaperPosition[]>([]);
   const [history, setHistory] = useState<PortfolioHistoryPoint[]>([]);
   const [scrubPoint, setScrubPoint] = useState<ChartPoint | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -74,14 +78,17 @@ export default function PortfolioScreen({ navigation }: { navigation?: NavLike }
     setError(null);
     try {
       await paperWalletService.ensureWallet(user.id);
-      const [nextSummary, nextPositions, nextHistory] = await Promise.all([
+      const [nextSummary, nextPositions, nextClosed, nextHistory] = await Promise.all([
         paperWalletService.getPortfolioSummary(user.id),
         paperWalletService.getPositions(user.id),
+        paperWalletService.getClosedPositions(user.id),
         paperWalletService.getPortfolioHistory(user.id, range),
       ]);
       setSummary(nextSummary);
       setPositions(nextPositions.filter((p) => p.status === 'open'));
+      setClosed(nextClosed);
       setHistory(nextHistory);
+      analytics.track('portfolio_view', { positions: nextPositions.length });
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Could not load your portfolio');
     }
@@ -114,16 +121,9 @@ export default function PortfolioScreen({ navigation }: { navigation?: NavLike }
   const goProject = (projectId: string) =>
     navigation?.navigate?.('ProjectDetail', { projectId });
 
-  const goWaitlist = () => {
-    if (navigation?.navigate) navigation.navigate('Waitlist');
-    else navigation?.getParent?.()?.navigate?.('Waitlist');
-  };
-
-  const goKalebDemo = () => {
+  const goExplore = () => {
     const parent = navigation?.getParent?.();
-    (parent?.navigate ?? navigation?.navigate)?.('ArtistExperience', {
-      artistId: '11111111-1111-4111-8111-111111111111',
-    });
+    (parent?.navigate ?? navigation?.navigate)?.('MainTabs', { screen: 'Explore' });
   };
 
   if (!user?.id) {
@@ -173,15 +173,10 @@ export default function PortfolioScreen({ navigation }: { navigation?: NavLike }
           <View style={styles.segmentOn}>
             <AppText variant="eyebrow" color={c.onAccent}>PAPER</AppText>
           </View>
-          <Pressable
-            style={styles.segmentOff}
-            onPress={goWaitlist}
-            accessibilityRole="button"
-            accessibilityLabel="Switch to live — join the waitlist"
-          >
+          <View style={styles.segmentOff} accessibilityLabel="Live investing is not open yet">
             <AppText variant="eyebrow" color={c.textFaint}>LIVE</AppText>
             <Ionicons name="lock-closed" size={10} color={c.textFaint} />
-          </Pressable>
+          </View>
         </View>
       </View>
 
@@ -209,7 +204,9 @@ export default function PortfolioScreen({ navigation }: { navigation?: NavLike }
         {headerSub}
       </AppText>
       <AppText variant="bodySmall" color={c.textMuted} style={styles.sub2}>
-        {`${fundedCount} position${fundedCount === 1 ? '' : 's'} · all-time paper return`}
+        {`${fundedCount} position${fundedCount === 1 ? '' : 's'} · ${
+          (summary?.returnPct ?? 0) >= 0 ? '+' : ''
+        }${(summary?.returnPct ?? 0).toFixed(2)}% all-time`}
       </AppText>
 
       <View style={styles.chartWrap}>
@@ -246,13 +243,13 @@ export default function PortfolioScreen({ navigation }: { navigation?: NavLike }
       {/* Stat pair */}
       <View style={styles.statGrid}>
         <View style={styles.statCard}>
-          <AppText variant="eyebrow" color={c.textFaint}>BUYING POWER</AppText>
+          <AppText variant="eyebrow" color={c.textFaint}>MUSISTASH CASH</AppText>
           <AppText variant="h2" tabular style={styles.statValue}>
             {money(cash, 0)}
           </AppText>
         </View>
         <View style={styles.statCard}>
-          <AppText variant="eyebrow" color={c.textFaint}>DEPLOYED</AppText>
+          <AppText variant="eyebrow" color={c.textFaint}>INVESTED</AppText>
           <AppText variant="h2" tabular style={styles.statValue}>
             {money(deployed, 0)}
           </AppText>
@@ -276,26 +273,24 @@ export default function PortfolioScreen({ navigation }: { navigation?: NavLike }
           </AppText>
           <Pressable
             style={styles.demoButton}
-            onPress={goKalebDemo}
+            onPress={goExplore}
             accessibilityRole="button"
-            accessibilityLabel="Open the Kaleb demo project"
+            accessibilityLabel="Explore projects"
           >
-            <AppText variant="label" color={c.accent}>Open the Kaleb demo</AppText>
+            <AppText variant="label" color={c.accent}>Explore projects</AppText>
           </Pressable>
         </View>
       ) : (
         positions.map((position, index) => {
-          const value = position.units * position.currentUnitPrice;
-          const pnl = value - position.costBasis;
-          const pnlPct = position.costBasis > 0 ? (pnl / position.costBasis) * 100 : 0;
-          const up = pnl >= 0;
+          const p = positionPnl(position.units, position.costBasis, position.currentUnitPrice);
+          const up = p.pnl >= 0;
           return (
             <Pressable
               key={position.id}
               style={[styles.positionRow, index > 0 && styles.rowDivider]}
               onPress={() => goProject(position.projectId)}
               accessibilityRole="button"
-              accessibilityLabel={`${position.artistName}, ${position.projectTitle}, ${money(value)}`}
+              accessibilityLabel={`${position.artistName}, ${position.projectTitle}, ${money(p.value)}`}
             >
               <View style={styles.positionMark}>
                 <AppText variant="h4" color={c.textFaint}>
@@ -307,25 +302,79 @@ export default function PortfolioScreen({ navigation }: { navigation?: NavLike }
                   {position.projectTitle}
                 </AppText>
                 <AppText variant="bodySmall" color={c.textMuted} numberOfLines={1}>
-                  {`${position.artistName} · ${position.units.toFixed(0)} shares`}
+                  {`${position.artistName} · ${position.units.toFixed(2)} units`}
                 </AppText>
               </View>
               <View style={styles.positionRight}>
                 <AppText variant="h4" tabular>
-                  {money(value)}
+                  {money(p.value)}
                 </AppText>
                 <AppText
                   variant="bodySmall"
                   tabular
-                  color={up ? c.accentSolid : c.textMuted}
+                  color={up ? c.accentSolid : c.negative}
                   style={styles.positionPnl}
                 >
-                  {`${up ? '+' : ''}${pnlPct.toFixed(1)}%`}
+                  {`${up ? '+' : ''}${p.pct.toFixed(1)}%`}
                 </AppText>
               </View>
             </Pressable>
           );
         })
+      )}
+
+      {closed.length > 0 && (
+        <>
+          <AppText variant="eyebrow" color={c.textMuted} style={styles.positionsTitle}>
+            COMPLETED
+          </AppText>
+          {closed.map((position, index) => {
+            const realized = position.realizedPnl ?? 0;
+            const up = realized >= 0;
+            return (
+              <Pressable
+                key={position.id}
+                style={[styles.positionRow, index > 0 && styles.rowDivider]}
+                onPress={() => goProject(position.projectId)}
+                accessibilityRole="button"
+                accessibilityLabel={`${position.projectTitle}, ${statusLabel((position.projectStatus as any) ?? 'completed')}`}
+              >
+                <View style={styles.positionMark}>
+                  <AppText variant="h4" color={c.textFaint}>
+                    {(position.projectTitle || '?').charAt(0).toUpperCase()}
+                  </AppText>
+                </View>
+                <View style={styles.positionLeft}>
+                  <AppText variant="h4" numberOfLines={1}>
+                    {position.projectTitle}
+                  </AppText>
+                  <AppText variant="bodySmall" color={c.textMuted} numberOfLines={1}>
+                    {`${position.artistName} · ${
+                      position.status === 'settled'
+                        ? 'settled'
+                        : position.status === 'refunded'
+                          ? 'refunded'
+                          : 'closed'
+                    }`}
+                  </AppText>
+                </View>
+                <View style={styles.positionRight}>
+                  <AppText variant="h4" tabular>
+                    {money(position.proceeds ?? 0)}
+                  </AppText>
+                  <AppText
+                    variant="bodySmall"
+                    tabular
+                    color={up ? c.accentSolid : c.negative}
+                    style={styles.positionPnl}
+                  >
+                    {`${up ? '+' : ''}${money(realized)}`}
+                  </AppText>
+                </View>
+              </Pressable>
+            );
+          })}
+        </>
       )}
 
       <AppText variant="caption" color={c.textFaint} style={styles.disclosure}>

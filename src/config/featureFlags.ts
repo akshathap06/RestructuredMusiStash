@@ -3,7 +3,6 @@
 export const featureFlags = {
   PAPER_TRADING_ENABLED: true,
   AGENTIC_MANAGER_ENABLED: true,
-  WAITLIST_ENABLED: true,
 } as const;
 
 export type FeatureFlag = keyof typeof featureFlags;

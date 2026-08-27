@@ -444,6 +444,9 @@ class AuthService {
             data: {
               name: sanitizedName,
               phone: sanitizedPhone,
+              // Signup-channel tracking for the waitlist auto-enrol trigger.
+              platform: 'app',
+              signup_source: 'app_signup',
             },
           },
         });

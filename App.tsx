@@ -86,13 +86,12 @@ import ChangelogScreen from './src/features/settings/screens/ChangelogScreen';
 // --- AI Feature ---
 import AgenticManagerScreen from './src/features/ai/screens/AgenticManagerScreen';
 
-// --- V2 Paper Trading / Explore / Waitlist ---
+// --- V2 Paper Trading / Explore ---
 import PortfolioScreen from './src/features/paper-trading/screens/PortfolioScreen';
 import PaperTradeScreen from './src/features/paper-trading/screens/PaperTradeScreen';
 import ProjectDetailScreen from './src/features/paper-trading/screens/ProjectDetailScreen';
 import BackingReceiptScreen from './src/features/paper-trading/screens/BackingReceiptScreen';
 import ExploreScreen from './src/features/explore/screens/ExploreScreen';
-import WaitlistScreen from './src/features/waitlist/screens/WaitlistScreen';
 import { featureFlags } from './src/config/featureFlags';
 
 // --- Shared Components ---
@@ -207,14 +206,6 @@ const MENU_SECTIONS: MenuSection[] = [
       { icon: 'mic-outline', label: 'Become an artist', route: 'CreateArtist' },
     ],
   },
-  ...(featureFlags.WAITLIST_ENABLED
-    ? [
-        {
-          label: 'Launch',
-          items: [{ icon: 'mail-outline', label: 'Join real-money waitlist', route: 'Waitlist' }],
-        },
-      ]
-    : []),
 ];
 
 // Minimal universal header: avatar opens the menu, quiet title, bell on the right
@@ -268,14 +259,15 @@ function UniversalHeader({ navigation, title }: { navigation: any, title: string
         case 'CreateHub':
           navigation.navigate('CreateHub');
           break;
+        case 'Waitlist':
+          // Waitlist screen removed — every account is auto-enrolled.
+          navigation.navigate('MainTabs', { screen: 'Explore' });
+          break;
         case 'BrowseArtists':
           navigation.navigate('BrowseArtists');
           break;
         case 'ArtistExperience':
           navigation.navigate('ArtistExperience', { artistId: 'artist_kaleb' });
-          break;
-        case 'Waitlist':
-          navigation.navigate('Waitlist');
           break;
         case 'AgenticManager':
           if (featureFlags.AGENTIC_MANAGER_ENABLED) navigation.navigate('AgenticManager');
@@ -730,17 +722,6 @@ function MainStack() {
         name="CreateHub"
         component={CreateHubScreen}
         options={{ headerShown: false }}
-      />
-      <Stack.Screen
-        name="Waitlist"
-        component={WaitlistScreen}
-        options={{
-          headerShown: true,
-          title: 'Launch waitlist',
-          headerStyle: { backgroundColor: '#0A0A0C' },
-          headerTintColor: '#F4F4F6',
-          headerTitleStyle: { fontFamily: 'Manrope_800ExtraBold' },
-        }}
       />
       <Stack.Screen
         name="PostDetail"

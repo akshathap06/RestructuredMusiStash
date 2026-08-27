@@ -5,6 +5,8 @@ import type {
   FundAllocation,
   Project,
   ProjectMilestone,
+  ProjectOutcome,
+  ProjectStatus,
   ScenarioTarget,
 } from '../types/experience';
 
@@ -47,8 +49,16 @@ type ProjectRow = {
   paper_backing_total: number | string;
   paper_backer_count: number;
   current_paper_share_price: number | string;
+  initial_price: number | string | null;
+  settlement_price: number | string | null;
   days_remaining: number | null;
   status: string;
+  outcome: string | null;
+  term_weeks: number | null;
+  funding_deadline: string | null;
+  maturity_date: string | null;
+  funded_at: string | null;
+  total_units: number | string | null;
   use_of_funds: unknown;
   milestones: unknown;
   deliverables: unknown;
@@ -85,6 +95,15 @@ function mapProject(row: ProjectRow): Project {
     paperBackerCount: row.paper_backer_count ?? 0,
     daysRemaining: row.days_remaining ?? 0,
     currentPaperSharePrice: num(row.current_paper_share_price) || 10,
+    initialPrice: num(row.initial_price) || 10,
+    settlementPrice: row.settlement_price != null ? num(row.settlement_price) : null,
+    status: (row.status as ProjectStatus) || 'funding',
+    outcome: (row.outcome as ProjectOutcome) ?? null,
+    termWeeks: row.term_weeks ?? 12,
+    fundingDeadline: row.funding_deadline,
+    maturityDate: row.maturity_date,
+    fundedAt: row.funded_at,
+    totalUnits: row.total_units != null ? num(row.total_units) : undefined,
     scenarioTargets: arr<ScenarioTarget>(row.scenario_targets),
     deliverables: arr<Deliverable>(row.deliverables),
     useOfFunds: arr<FundAllocation>(row.use_of_funds),
@@ -137,6 +156,10 @@ export const artistProjectService = {
     const share = input.currentPaperSharePrice ?? 10;
     const goal = Math.max(100, input.fundingGoal);
     const short = input.shortDescription.trim();
+    const windowDays = input.daysRemaining ?? 30;
+    const fundingDeadline = new Date(
+      Date.now() + windowDays * 24 * 60 * 60 * 1000,
+    ).toISOString();
 
     const payload = {
       artist_profile_id: input.artistId,
@@ -150,8 +173,12 @@ export const artistProjectService = {
       hero_image_url: input.heroImageUrl || input.artworkUrl || DEFAULT_ART,
       funding_goal: goal,
       current_paper_share_price: share,
-      days_remaining: input.daysRemaining ?? 30,
-      status: 'live',
+      initial_price: share,
+      days_remaining: windowDays,
+      funding_window_days: windowDays,
+      funding_deadline: fundingDeadline,
+      term_weeks: 12,
+      status: 'funding',
       use_of_funds: [
         { id: 'f1', label: 'Recording', amount: Math.round(goal * 0.3), percent: 30 },
         { id: 'f2', label: 'Mixing', amount: Math.round(goal * 0.2), percent: 20 },
@@ -191,9 +218,45 @@ export const artistProjectService = {
     return mapProject(data as ProjectRow);
   },
 
+  /** Model-price history for a project's chart. */
+  async getPriceHistory(
+    projectId: string,
+    sinceDays = 90,
+  ): Promise<{ t: number; v: number }[]> {
+    const since = new Date(Date.now() - sinceDays * 86400_000).toISOString();
+    const { data, error } = await supabase
+      .from('project_valuations')
+      .select('value, recorded_at')
+      .eq('project_id', projectId)
+      .gte('recorded_at', since)
+      .order('recorded_at', { ascending: true });
+    if (error) throw new Error(error.message);
+    return (data ?? []).map((r: any) => ({
+      t: new Date(r.recorded_at).getTime(),
+      v: num(r.value),
+    }));
+  },
+
+  /** Ask the engine to refresh a project's price if its last mark is stale. */
+  async repriceIfStale(project: Project): Promise<void> {
+    // last_priced_at isn't on the mapped Project; cheap server-side guard handles
+    // same-day repeats, so just fire it.
+    try {
+      await supabase.rpc('rpc_reprice_project', { p_project_id: project.id });
+    } catch {
+      /* non-critical */
+    }
+  },
+
+  /** Artist/owner cancels a project — 100% refund to every backer. */
+  async cancel(projectId: string): Promise<void> {
+    const { error } = await supabase.rpc('rpc_cancel_project', { p_project_id: projectId });
+    if (error) throw new Error(error.message);
+  },
+
   /**
-   * @deprecated Backing totals are maintained atomically inside
-   * `rpc_open_paper_position`. Kept for call-site compatibility; just re-reads.
+   * @deprecated Backing totals are maintained atomically inside `rpc_invest`.
+   * Kept for call-site compatibility; just re-reads.
    */
   async updateBacking(
     projectId: string,

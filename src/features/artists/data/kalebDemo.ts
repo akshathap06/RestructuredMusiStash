@@ -29,6 +29,10 @@ export const kalebProject: Project = {
   paperBackerCount: 342,
   daysRemaining: 18,
   currentPaperSharePrice: 10,
+  initialPrice: 10,
+  status: 'funding',
+  outcome: null,
+  termWeeks: 12,
   scenarioTargets: [
     { weeks: 4, targetPaperSharePrice: 10.8, label: '4 weeks' },
     { weeks: 12, targetPaperSharePrice: 12.8, label: '12 weeks' },

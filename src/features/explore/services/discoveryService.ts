@@ -4,6 +4,7 @@ export type DiscoveryProject = {
   id: string;
   title: string;
   type: string;
+  status: string;
   artistName: string;
   artistProfileId: string;
   artworkUrl: string | null;
@@ -11,7 +12,10 @@ export type DiscoveryProject = {
   paperBackingTotal: number;
   paperBackerCount: number;
   daysRemaining: number;
-  aiScore: number | null;
+  currentPrice: number;
+  aiScore: number | null; // = momentum score
+  resonanceScore: number | null;
+  momentumScore: number | null;
   percent: number; // 0..100
 };
 
@@ -31,16 +35,23 @@ const num = (v: unknown): number => {
 };
 
 const PROJECT_SELECT =
-  'id, title, type, artwork_url, funding_goal, paper_backing_total, paper_backer_count, days_remaining, ai_analysis, artist_profile_id, artist_profiles(artist_name, name)';
+  'id, title, type, status, artwork_url, funding_goal, paper_backing_total, paper_backer_count, days_remaining, current_paper_share_price, resonance_score, momentum_score, ai_analysis, artist_profile_id, artist_profiles(artist_name, name)';
 
 function mapProject(row: any): DiscoveryProject {
   const goal = num(row.funding_goal);
   const backed = num(row.paper_backing_total);
   const ai = row.ai_analysis;
+  const momentum =
+    row.momentum_score != null
+      ? Number(row.momentum_score)
+      : ai && typeof ai.score === 'number'
+        ? ai.score
+        : null;
   return {
     id: row.id,
     title: row.title,
     type: row.type || 'Project',
+    status: row.status || 'funding',
     artistName: row.artist_profiles?.artist_name ?? row.artist_profiles?.name ?? 'Artist',
     artistProfileId: row.artist_profile_id,
     artworkUrl: row.artwork_url ?? null,
@@ -48,7 +59,10 @@ function mapProject(row: any): DiscoveryProject {
     paperBackingTotal: backed,
     paperBackerCount: row.paper_backer_count ?? 0,
     daysRemaining: row.days_remaining ?? 0,
-    aiScore: ai && typeof ai.score === 'number' ? ai.score : null,
+    currentPrice: num(row.current_paper_share_price) || 10,
+    aiScore: momentum,
+    resonanceScore: row.resonance_score != null ? Number(row.resonance_score) : null,
+    momentumScore: momentum,
     percent: goal > 0 ? Math.min(100, Math.round((backed / goal) * 100)) : 0,
   };
 }
@@ -66,13 +80,16 @@ function mapArtist(row: any): DiscoveryArtist {
   };
 }
 
+// Projects that are still open for backing.
+const OPEN_STATUSES = ['funding', 'funded', 'active'];
+
 export const discoveryService = {
-  /** All live projects, highest backing-momentum first. */
-  async getLiveProjects(limit = 12): Promise<DiscoveryProject[]> {
+  /** All open projects, highest backer count first. */
+  async getLiveProjects(limit = 24): Promise<DiscoveryProject[]> {
     const { data, error } = await supabase
       .from('artist_projects')
       .select(PROJECT_SELECT)
-      .eq('status', 'live')
+      .in('status', OPEN_STATUSES)
       .order('paper_backer_count', { ascending: false })
       .order('created_at', { ascending: false })
       .limit(limit);
@@ -80,16 +97,41 @@ export const discoveryService = {
     return (data ?? []).map(mapProject);
   },
 
-  /** The single most-backed live project for the hero card. */
+  /** The single most-backed open project for the hero card. */
   async getFeaturedProject(): Promise<DiscoveryProject | null> {
     const { data, error } = await supabase
       .from('artist_projects')
       .select(PROJECT_SELECT)
-      .eq('status', 'live')
+      .in('status', OPEN_STATUSES)
       .order('paper_backing_total', { ascending: false })
       .limit(1);
     if (error) throw new Error(error.message);
     return data && data[0] ? mapProject(data[0]) : null;
+  },
+
+  /**
+   * Client-side sorted discovery sections from one fetched pool.
+   * (Trending / Closing soon / High resonance / High momentum / New / Under $10k)
+   */
+  sortSection(pool: DiscoveryProject[], section: string): DiscoveryProject[] {
+    const list = [...pool];
+    switch (section) {
+      case 'Trending':
+        return list.sort((a, b) => b.paperBackerCount - a.paperBackerCount);
+      case 'Closing soon':
+        return list.sort((a, b) => a.daysRemaining - b.daysRemaining);
+      case 'High resonance':
+        return list.sort((a, b) => (b.resonanceScore ?? 0) - (a.resonanceScore ?? 0));
+      case 'High momentum':
+      case 'Momentum':
+        return list.sort((a, b) => (b.momentumScore ?? 0) - (a.momentumScore ?? 0));
+      case 'New':
+        return list; // pool already newest-first from the query
+      case 'Under $10k':
+        return list.filter((p) => p.fundingGoal < 10000);
+      default:
+        return list;
+    }
   },
 
   /** Approved artists, most monthly listeners first. */

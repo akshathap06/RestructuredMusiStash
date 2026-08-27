@@ -23,7 +23,7 @@ import {
 
 const c = MusiStashTheme.colors;
 
-const FILTERS = ['All', 'Momentum', 'Closing soon', 'New', 'Under $10k'];
+const FILTERS = ['All', 'Trending', 'Closing soon', 'High resonance', 'High momentum', 'New'];
 
 function money(n: number): string {
   return `$${Math.round(n).toLocaleString()}`;
@@ -98,18 +98,7 @@ export default function ExploreScreen(props: any) {
 
   const carousel = useMemo(() => {
     const rest = projects.filter((p) => p.id !== featured?.id);
-    switch (filter) {
-      case 'Closing soon':
-        return [...rest].sort((a, b) => a.daysRemaining - b.daysRemaining);
-      case 'New':
-        return rest; // already created_at desc from the service
-      case 'Under $10k':
-        return rest.filter((p) => p.fundingGoal < 10000);
-      case 'Momentum':
-        return [...rest].sort((a, b) => (b.aiScore ?? 0) - (a.aiScore ?? 0));
-      default:
-        return rest;
-    }
+    return discoveryService.sortSection(rest, filter);
   }, [projects, featured?.id, filter]);
 
   const openProject = (id: string) => parentNav?.navigate?.('ProjectDetail', { projectId: id });

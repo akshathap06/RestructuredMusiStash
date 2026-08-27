@@ -18,8 +18,13 @@ import {
 } from '../../artists/data/kalebDemo';
 import type { Project } from '../../artists/types/experience';
 import { PAPER_DISCLOSURE_SHORT } from '../../artists/types/experience';
-import { paperWalletService } from '../services/paperWalletService';
+import { paperWalletService, PaperPosition } from '../services/paperWalletService';
 import { artistProjectService } from '../../artists/services/artistProjectService';
+import { statusLabel, statusTone, canExit } from '../domain/projectLifecycle';
+import { positionPnl, projectedExitProceeds } from '../domain/pricing';
+import { analytics } from '../../../services/analytics';
+import { AppText, Eyebrow } from '../../../shared/components/ui';
+import { InteractiveLineChart } from '../components/charts';
 import { ProjectHeader } from '../components/project/ProjectHeader';
 import { FundingSummary } from '../components/project/FundingSummary';
 import { DisclosureRow } from '../components/project/DisclosureRow';
@@ -32,6 +37,9 @@ import { AIAnalysisSheet } from '../components/sheets/AIAnalysisSheet';
 import { PaperBackingSheet } from '../components/sheets/PaperBackingSheet';
 
 const c = MusiStashTheme.colors;
+
+const toneColor = (t: 'accent' | 'positive' | 'negative' | 'muted'): string =>
+  t === 'positive' ? c.accentSolid : t === 'negative' ? c.negative : t === 'accent' ? c.accent : c.textMuted;
 
 type NavLike = {
   goBack?: () => void;
@@ -72,20 +80,48 @@ export default function ProjectDetailScreen({
   const [planOpen, setPlanOpen] = useState(false);
   const [aiOpen, setAiOpen] = useState(false);
   const [backingOpen, setBackingOpen] = useState(false);
+  const [priceHistory, setPriceHistory] = useState<{ t: number; v: number }[]>([]);
+  const [myPosition, setMyPosition] = useState<PaperPosition | null>(null);
+  const [exiting, setExiting] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
     (async () => {
       setSuccess(false);
       const loaded = await artistProjectService.getById(projectId);
-      if (!cancelled) {
-        setProject(loaded || seed);
+      if (cancelled) return;
+      setProject(loaded || seed);
+      analytics.track('project_view', { project_id: projectId });
+      if (loaded) {
+        artistProjectService.repriceIfStale(loaded);
+        artistProjectService
+          .getPriceHistory(loaded.id)
+          .then((h) => !cancelled && setPriceHistory(h))
+          .catch(() => {});
       }
     })();
     return () => {
       cancelled = true;
     };
   }, [projectId, seed]);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      if (!user?.id) return;
+      try {
+        const open = await paperWalletService.getPositions(user.id);
+        if (!cancelled) {
+          setMyPosition(open.find((p) => p.projectId === projectId) ?? null);
+        }
+      } catch {
+        /* ignore */
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [user?.id, projectId, success]);
 
   useEffect(() => {
     let cancelled = false;
@@ -124,6 +160,57 @@ export default function ProjectDetailScreen({
   const openBacking = () => {
     setSuccess(false);
     setBackingOpen(true);
+    analytics.track('invest_started', { project_id: projectId, amount });
+  };
+
+  const onExit = async () => {
+    if (!project || !myPosition || exiting) return;
+    const est = projectedExitProceeds(myPosition.units, project.currentPaperSharePrice);
+    Alert.alert(
+      'Exit position',
+      `Sell ${myPosition.units.toFixed(2)} units of ${project.title} at the current model price minus a 2% spread — about ${formatMoney(est)} back to MusiStash Cash.`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Exit',
+          style: 'destructive',
+          onPress: async () => {
+            setExiting(true);
+            try {
+              const res = await paperWalletService.exitPosition(project.id);
+              analytics.track('position_sold', {
+                project_id: project.id,
+                proceeds: res.position.proceeds ?? undefined,
+              });
+              setMyPosition(null);
+              navigation?.navigate?.('BackingReceipt', {
+                kind: 'submit',
+                title: 'Position closed',
+                subtitle: `${project.title} — proceeds returned to MusiStash Cash.`,
+                primaryLabel: 'View portfolio',
+                primaryTarget: 'Portfolio',
+                rows: [
+                  { k: 'Units sold', v: (res.position.units ?? myPosition.units).toFixed(2) },
+                  { k: 'Exit price', v: formatMoney(res.position.exitPrice ?? 0) },
+                  { k: 'Proceeds', v: formatMoney(res.position.proceeds ?? 0) },
+                  {
+                    k: 'Realized P&L',
+                    v: `${(res.position.realizedPnl ?? 0) >= 0 ? '+' : ''}${formatMoney(res.position.realizedPnl ?? 0)}`,
+                  },
+                ],
+              });
+            } catch (err) {
+              Alert.alert(
+                'Could not exit',
+                err instanceof Error ? err.message : 'Please try again.',
+              );
+            } finally {
+              setExiting(false);
+            }
+          },
+        },
+      ],
+    );
   };
 
   const onConfirmBacking = async () => {
@@ -208,7 +295,42 @@ export default function ProjectDetailScreen({
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
       >
-        <Text style={styles.simBadge}>{PAPER_DISCLOSURE_SHORT}</Text>
+        <View style={styles.badgeRow}>
+          <Text style={styles.simBadge}>{PAPER_DISCLOSURE_SHORT}</Text>
+          <View
+            style={[
+              styles.statusPill,
+              { borderColor: toneColor(statusTone(project.status)) },
+            ]}
+          >
+            <AppText variant="eyebrow" color={toneColor(statusTone(project.status))}>
+              {statusLabel(project.status).toUpperCase()}
+            </AppText>
+          </View>
+        </View>
+
+        {/* Current model price + history (distinct from funding progress) */}
+        <View style={styles.priceBlock}>
+          <Eyebrow color={c.textFaint}>CURRENT MODEL PRICE</Eyebrow>
+          <View style={styles.priceRow}>
+            <AppText variant="money" tabular color={c.accentSolid}>
+              {formatMoney(project.currentPaperSharePrice)}
+            </AppText>
+            <AppText variant="bodySmall" color={c.textMuted} style={{ paddingBottom: 6 }}>
+              {`per unit · start ${formatMoney(project.initialPrice)}`}
+            </AppText>
+          </View>
+          {priceHistory.length >= 2 && (
+            <View style={styles.spark}>
+              <InteractiveLineChart
+                points={priceHistory}
+                height={96}
+                positiveColor={c.accent}
+                negativeColor={c.negative}
+              />
+            </View>
+          )}
+        </View>
 
         <FundingSummary
           paperBackingTotal={project.paperBackingTotal}
@@ -217,9 +339,53 @@ export default function ProjectDetailScreen({
           daysRemaining={project.daysRemaining}
         />
 
+        {myPosition && (
+          <View style={styles.holdingCard}>
+            <View style={{ flex: 1 }}>
+              <Eyebrow color={c.textFaint}>YOUR POSITION</Eyebrow>
+              <AppText variant="h4" tabular style={{ marginTop: 4 }}>
+                {`${myPosition.units.toFixed(2)} units · ${formatMoney(
+                  positionPnl(myPosition.units, myPosition.costBasis, project.currentPaperSharePrice).value,
+                )}`}
+              </AppText>
+              <AppText
+                variant="bodySmall"
+                tabular
+                color={
+                  positionPnl(myPosition.units, myPosition.costBasis, project.currentPaperSharePrice).pnl >= 0
+                    ? c.accentSolid
+                    : c.negative
+                }
+              >
+                {(() => {
+                  const p = positionPnl(
+                    myPosition.units,
+                    myPosition.costBasis,
+                    project.currentPaperSharePrice,
+                  );
+                  return `${p.pnl >= 0 ? '+' : ''}${formatMoney(p.pnl)} (${p.pct >= 0 ? '+' : ''}${p.pct.toFixed(1)}%)`;
+                })()}
+              </AppText>
+            </View>
+            {canExit(project.status) && (
+              <TouchableOpacity
+                style={styles.exitBtn}
+                onPress={onExit}
+                disabled={exiting}
+                accessibilityRole="button"
+                accessibilityLabel="Exit position"
+              >
+                <AppText variant="label" color={c.textPrimary}>
+                  {exiting ? 'Exiting…' : 'Exit'}
+                </AppText>
+              </TouchableOpacity>
+            )}
+          </View>
+        )}
+
         <DisclosureRow
           title="Paper contract"
-          leftValue={`${formatMoney(project.currentPaperSharePrice)} / share`}
+          leftValue={`${formatMoney(project.currentPaperSharePrice)} / unit`}
           rightValue={horizonLabel}
           subtitle="Simulated terms · not a real security"
           onPress={() => setContractOpen(true)}
@@ -228,7 +394,7 @@ export default function ProjectDetailScreen({
         <DisclosureRow
           title="AI analysis"
           leftValue={project.aiAnalysis.label}
-          rightValue={String(project.aiAnalysis.score)}
+          rightValue={String(project.aiAnalysis.momentumScore ?? project.aiAnalysis.score)}
           subtitle={project.aiAnalysis.summary}
           onPress={() => setAiOpen(true)}
         />
@@ -298,6 +464,45 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     paddingBottom: 16,
+  },
+  badgeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginHorizontal: 16,
+    marginTop: 4,
+    marginBottom: 8,
+  },
+  statusPill: {
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 999,
+    borderWidth: 1,
+  },
+  priceBlock: { marginHorizontal: 16, marginBottom: 16 },
+  priceRow: { flexDirection: 'row', alignItems: 'flex-end', gap: 8, marginTop: 6 },
+  spark: { marginTop: 12 },
+  holdingCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    marginHorizontal: 16,
+    marginTop: 4,
+    marginBottom: 12,
+    padding: 14,
+    borderRadius: 14,
+    backgroundColor: c.surface,
+    borderWidth: 1,
+    borderColor: c.line,
+  },
+  exitBtn: {
+    minHeight: 40,
+    paddingHorizontal: 18,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: c.borderStrong,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   simBadge: {
     marginHorizontal: 16,

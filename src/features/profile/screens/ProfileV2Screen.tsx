@@ -43,7 +43,7 @@ type ArtistProfileRow = {
 };
 
 const PAPER_DISCLOSURE =
-  'Paper trading simulation only. No real money, securities, or ownership.';
+  'MusiStash Paper Trading uses simulated currency and simulated project values. No real securities or financial returns are being offered.';
 
 function initialsOf(name: string): string {
   return name
@@ -291,7 +291,7 @@ export default function ProfileV2Screen({ navigation }: Props) {
                     label: 'Listeners',
                     value: formatCompact(artist.monthly_listeners || 0),
                   },
-                  { label: 'Paper backers', value: formatCompact(paperBackers) },
+                  { label: 'Backers', value: formatCompact(paperBackers) },
                 ]}
               />
             </View>
@@ -339,7 +339,7 @@ export default function ProfileV2Screen({ navigation }: Props) {
               <StatStrip
                 items={[
                   { label: 'Positions', value: String(openPositions) },
-                  { label: 'Paper cash', value: formatMoney(summary?.cash ?? 0) },
+                  { label: 'MusiStash Cash', value: formatMoney(summary?.cash ?? 0) },
                   { label: 'Following', value: formatCompact(following) },
                 ]}
               />
@@ -356,8 +356,11 @@ export default function ProfileV2Screen({ navigation }: Props) {
                 onPress={() => Alert.alert('Coming soon')}
               />
               <ListRow
-                label="Join real-money waitlist"
-                onPress={() => navigation.navigate('Waitlist')}
+                label="Explore projects"
+                onPress={() =>
+                  navigation.getParent?.()?.navigate?.('MainTabs', { screen: 'Explore' }) ??
+                  navigation.navigate('MainTabs', { screen: 'Explore' })
+                }
               />
             </View>
 

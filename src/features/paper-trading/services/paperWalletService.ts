@@ -1,4 +1,5 @@
 import { supabase } from '../../../lib/supabase';
+import { positionPnl } from '../domain/pricing';
 
 const INITIAL_GRANT = 10_000;
 
@@ -10,21 +11,27 @@ export type PaperWallet = {
 };
 
 export type PaperTransactionType =
-  | 'initial_grant'
-  | 'open_position'
-  | 'close_position'
-  | 'adjustment';
+  | 'PAPER_CASH_INITIALIZED'
+  | 'INVEST'
+  | 'SELL'
+  | 'PROJECT_SETTLEMENT'
+  | 'FAILED_PROJECT_REFUND'
+  | 'PROJECT_CANCELLATION_REFUND'
+  | 'ADJUSTMENT';
 
 export type PaperTransaction = {
   id: string;
   userId: string;
   type: PaperTransactionType;
   amount: number;
+  units?: number;
+  price?: number;
   projectId?: string;
-  idempotencyKey?: string;
   createdAt: string;
   meta?: Record<string, unknown>;
 };
+
+export type PaperPositionStatus = 'open' | 'closed' | 'settled' | 'refunded';
 
 export type PaperPosition = {
   id: string;
@@ -32,13 +39,18 @@ export type PaperPosition = {
   projectId: string;
   projectTitle: string;
   artistName: string;
+  artworkUrl?: string | null;
   units: number;
   costBasis: number;
   unitPriceAtOpen: number;
   currentUnitPrice: number;
-  status: 'open' | 'closed' | 'suspended';
+  status: PaperPositionStatus;
+  projectStatus?: string;
   openedAt: string;
-  closedAt?: string;
+  closedAt?: string | null;
+  realizedPnl?: number | null;
+  proceeds?: number | null;
+  exitPrice?: number | null;
 };
 
 export type OpenPositionInput = {
@@ -49,22 +61,24 @@ export type OpenPositionInput = {
 };
 
 export type PortfolioSummary = {
-  cash: number;
-  positionsValue: number;
-  total: number;
+  cash: number; // MusiStash Cash
+  positionsValue: number; // mark-to-market of open positions
+  investedValue: number; // alias of positionsValue (spec wording)
+  costBasis: number; // Σ cost of open positions
+  unrealizedPnl: number;
+  realizedPnl: number; // Σ realized_pnl over closed/settled/refunded
+  total: number; // cash + positionsValue
+  totalReturn: number; // total - (cash-at-start baseline $10k) ≈ unrealized + realized
+  returnPct: number; // totalReturn / 10000 * 100
   dayChangePct: number;
 };
 
-export type PortfolioHistoryPoint = {
-  t: number;
-  v: number;
-};
+export type PortfolioHistoryPoint = { t: number; v: number };
 
 export type HistoryRange = '1D' | '1W' | '1M' | '3M' | '1Y' | 'ALL';
 
 // ---------------------------------------------------------------------------
-// Row shapes coming back from Supabase (snake_case) + mappers to the public
-// camelCase types above, which the screens already consume.
+// Row shapes + mappers
 // ---------------------------------------------------------------------------
 type WalletRow = {
   user_id: string;
@@ -80,10 +94,16 @@ type PositionRow = {
   amount: number | string;
   shares: number | string;
   entry_share_price: number | string;
-  status: PaperPosition['status'];
+  status: PaperPositionStatus;
   created_at: string;
+  closed_at: string | null;
+  realized_pnl: number | string | null;
+  proceeds: number | string | null;
+  exit_price: number | string | null;
   artist_projects?: {
     title: string | null;
+    artwork_url: string | null;
+    status: string | null;
     current_paper_share_price: number | string | null;
     artist_profiles?: { artist_name: string | null; name: string | null } | null;
   } | null;
@@ -95,6 +115,8 @@ type TransactionRow = {
   project_id: string | null;
   type: PaperTransactionType;
   amount: number | string;
+  units: number | string | null;
+  price: number | string | null;
   balance_after: number | string | null;
   created_at: string;
 };
@@ -116,19 +138,26 @@ function mapWallet(row: WalletRow): PaperWallet {
 function mapPosition(row: PositionRow): PaperPosition {
   const project = row.artist_projects ?? null;
   const artist = project?.artist_profiles ?? null;
-  const currentUnitPrice = num(project?.current_paper_share_price) || num(row.entry_share_price);
+  const currentUnitPrice =
+    num(project?.current_paper_share_price) || num(row.entry_share_price);
   return {
     id: row.id,
     userId: row.user_id,
     projectId: row.project_id,
-    projectTitle: project?.title ?? 'Paper project',
+    projectTitle: project?.title ?? 'Project',
     artistName: artist?.artist_name ?? artist?.name ?? 'Artist',
+    artworkUrl: project?.artwork_url ?? null,
     units: num(row.shares),
     costBasis: num(row.amount),
     unitPriceAtOpen: num(row.entry_share_price),
     currentUnitPrice,
     status: row.status ?? 'open',
+    projectStatus: project?.status ?? undefined,
     openedAt: row.created_at,
+    closedAt: row.closed_at,
+    realizedPnl: row.realized_pnl != null ? num(row.realized_pnl) : null,
+    proceeds: row.proceeds != null ? num(row.proceeds) : null,
+    exitPrice: row.exit_price != null ? num(row.exit_price) : null,
   };
 }
 
@@ -138,6 +167,8 @@ function mapTransaction(row: TransactionRow): PaperTransaction {
     userId: row.user_id,
     type: row.type,
     amount: num(row.amount),
+    units: row.units != null ? num(row.units) : undefined,
+    price: row.price != null ? num(row.price) : undefined,
     projectId: row.project_id ?? undefined,
     createdAt: row.created_at,
     meta: row.balance_after != null ? { balanceAfter: num(row.balance_after) } : undefined,
@@ -145,9 +176,8 @@ function mapTransaction(row: TransactionRow): PaperTransaction {
 }
 
 const POSITION_SELECT =
-  '*, artist_projects(title, current_paper_share_price, artist_profiles(artist_name, name))';
+  '*, artist_projects(title, artwork_url, status, current_paper_share_price, artist_profiles(artist_name, name))';
 
-// Query window (ms) for portfolio history by range.
 const DAY = 24 * 60 * 60 * 1000;
 const RANGE_START_MS: Record<HistoryRange, number> = {
   '1D': DAY,
@@ -157,25 +187,20 @@ const RANGE_START_MS: Record<HistoryRange, number> = {
   '1Y': 365 * DAY,
   ALL: 10 * 365 * DAY,
 };
-
-// Re-snapshot on load if the newest snapshot is older than this.
 const SNAPSHOT_STALE_MS = 12 * 60 * 60 * 1000;
 
 class PaperWalletService {
   /**
-   * Supabase-backed paper wallet. Money-mutating operations go through
-   * SECURITY DEFINER RPCs so balance / positions / ledger / project totals /
-   * valuation marks / portfolio snapshots stay consistent. Simulation only —
-   * never touches real money or Stripe.
+   * Supabase-backed MusiStash Cash + paper positions. Every money-mutating
+   * operation goes through a SECURITY DEFINER RPC. Simulation only.
    */
-  async ensureWallet(_userId: string): Promise<PaperWallet> {
+  async ensureWallet(_userId?: string): Promise<PaperWallet> {
     const { data, error } = await supabase.rpc('rpc_ensure_paper_wallet');
     if (error) throw new Error(error.message);
-    if (!data) throw new Error('Could not load paper wallet');
+    if (!data) throw new Error('Could not load your MusiStash Cash');
     return mapWallet(data as WalletRow);
   }
 
-  /** Clear positions + ledger and restore the $10,000 grant. */
   async resetAccount(_userId?: string): Promise<PaperWallet> {
     const { data, error } = await supabase.rpc('rpc_reset_paper_account');
     if (error) throw new Error(error.message);
@@ -192,6 +217,7 @@ class PaperWalletService {
     return data ? mapWallet(data as WalletRow) : null;
   }
 
+  /** Open (active) positions. */
   async getPositions(userId: string): Promise<PaperPosition[]> {
     const { data, error } = await supabase
       .from('paper_positions')
@@ -199,6 +225,18 @@ class PaperWalletService {
       .eq('user_id', userId)
       .eq('status', 'open')
       .order('created_at', { ascending: false });
+    if (error) throw new Error(error.message);
+    return (data as PositionRow[] | null)?.map(mapPosition) ?? [];
+  }
+
+  /** Closed / settled / refunded positions — the "Completed investments" history. */
+  async getClosedPositions(userId: string): Promise<PaperPosition[]> {
+    const { data, error } = await supabase
+      .from('paper_positions')
+      .select(POSITION_SELECT)
+      .eq('user_id', userId)
+      .in('status', ['closed', 'settled', 'refunded'])
+      .order('closed_at', { ascending: false });
     if (error) throw new Error(error.message);
     return (data as PositionRow[] | null)?.map(mapPosition) ?? [];
   }
@@ -213,23 +251,19 @@ class PaperWalletService {
     return (data as TransactionRow[] | null)?.map(mapTransaction) ?? [];
   }
 
-  async openPosition(
+  /** Back a project with MusiStash Cash at the live model price. */
+  async invest(
     _userId: string,
-    input: OpenPositionInput
+    input: OpenPositionInput,
   ): Promise<{ wallet: PaperWallet; position: PaperPosition; transaction: PaperTransaction }> {
     const { projectId, notional } = input;
-    if (!(notional > 0)) {
-      throw new Error('Notional must be greater than zero');
-    }
+    if (!(notional > 0)) throw new Error('Amount must be greater than zero');
 
-    const { data, error } = await supabase.rpc('rpc_open_paper_position', {
+    const { data, error } = await supabase.rpc('rpc_invest', {
       p_project_id: projectId,
       p_amount: notional,
     });
-    if (error) {
-      // Surface the friendly messages raised by the RPC verbatim.
-      throw new Error(error.message || 'Could not open paper position');
-    }
+    if (error) throw new Error(error.message || 'Could not open position');
 
     const payload = data as {
       wallet: WalletRow;
@@ -237,11 +271,8 @@ class PaperWalletService {
       transaction: TransactionRow;
     };
     const position = mapPosition(payload.position);
-    // The RPC returns the raw position row without the joined project; fill the
-    // display fields from the caller's input so the UI has names immediately.
     position.projectTitle = input.projectTitle || position.projectTitle;
     position.artistName = input.artistName || position.artistName;
-
     return {
       wallet: mapWallet(payload.wallet),
       position,
@@ -249,20 +280,65 @@ class PaperWalletService {
     };
   }
 
+  /** Back-compat alias. */
+  openPosition = this.invest;
+
+  /** Early exit — sell an open position at current model price − 2% spread. */
+  async exitPosition(
+    projectId: string,
+  ): Promise<{ wallet: PaperWallet; position: PaperPosition; transaction: PaperTransaction }> {
+    const { data, error } = await supabase.rpc('rpc_exit_position', {
+      p_project_id: projectId,
+    });
+    if (error) throw new Error(error.message || 'Could not exit position');
+    const payload = data as {
+      wallet: WalletRow;
+      position: PositionRow;
+      transaction: TransactionRow;
+    };
+    return {
+      wallet: mapWallet(payload.wallet),
+      position: mapPosition(payload.position),
+      transaction: mapTransaction(payload.transaction),
+    };
+  }
+
   async getPortfolioSummary(userId: string): Promise<PortfolioSummary> {
-    const wallet = await this.ensureWallet(userId);
-    const positions = await this.getPositions(userId);
-    const positionsValue = positions.reduce(
-      (sum, p) => sum + p.units * p.currentUnitPrice,
-      0
+    const [wallet, open, closed] = await Promise.all([
+      this.ensureWallet(userId),
+      this.getPositions(userId),
+      this.getClosedPositions(userId),
+    ]);
+
+    let positionsValue = 0;
+    let costBasis = 0;
+    for (const p of open) {
+      const pnl = positionPnl(p.units, p.costBasis, p.currentUnitPrice);
+      positionsValue += pnl.value;
+      costBasis += p.costBasis;
+    }
+    positionsValue = round2(positionsValue);
+    const unrealizedPnl = round2(positionsValue - costBasis);
+    const realizedPnl = round2(
+      closed.reduce((s, p) => s + (p.realizedPnl ?? 0), 0),
     );
+
     const cash = wallet.availableBalance;
+    const total = round2(cash + positionsValue);
+    const totalReturn = round2(total - INITIAL_GRANT);
+    const returnPct = round2((totalReturn / INITIAL_GRANT) * 100);
 
     return {
       cash,
       positionsValue,
-      total: cash + positionsValue,
-      dayChangePct: await this.dayChangePct(userId, cash + positionsValue),
+      investedValue: positionsValue,
+      costBasis: round2(costBasis),
+      unrealizedPnl,
+      realizedPnl,
+      total,
+      totalReturn,
+      returnPct,
+      dayChangePct: await this.dayChangePct(userId, total),
     };
   }
 
@@ -278,15 +354,15 @@ class PaperWalletService {
     if (!first) return 0;
     const base = num(first.value);
     if (base <= 0) return 0;
-    return ((currentTotal - base) / base) * 100;
+    return round2(((currentTotal - base) / base) * 100);
   }
 
   async getPortfolioHistory(
     userId: string,
-    range: HistoryRange
+    range: HistoryRange,
   ): Promise<PortfolioHistoryPoint[]> {
     const since = new Date(Date.now() - RANGE_START_MS[range]).toISOString();
-    let { data, error } = await supabase
+    const { data, error } = await supabase
       .from('paper_portfolio_snapshots')
       .select('value, recorded_at')
       .eq('user_id', userId)
@@ -296,8 +372,6 @@ class PaperWalletService {
 
     let rows = (data as { value: number | string; recorded_at: string }[] | null) ?? [];
 
-    // Opportunistically record a fresh snapshot if the newest one is stale, so
-    // the chart keeps moving even without a cron.
     const newest = rows[rows.length - 1];
     const stale =
       !newest || Date.now() - new Date(newest.recorded_at).getTime() > SNAPSHOT_STALE_MS;
@@ -308,14 +382,9 @@ class PaperWalletService {
       }
     }
 
-    const points = rows.map((r) => ({
-      t: new Date(r.recorded_at).getTime(),
-      v: num(r.value),
-    }));
-
+    const points = rows.map((r) => ({ t: new Date(r.recorded_at).getTime(), v: num(r.value) }));
     if (points.length >= 2) return points;
 
-    // Not enough marks yet — a flat 2-point line at the current total.
     const summary = await this.getPortfolioSummary(userId);
     const now = Date.now();
     return [
@@ -325,7 +394,10 @@ class PaperWalletService {
   }
 }
 
+function round2(n: number): number {
+  return Math.round(n * 100) / 100;
+}
+
 export const paperWalletService = new PaperWalletService();
 export default paperWalletService;
-
 export { INITIAL_GRANT };
