@@ -15,6 +15,7 @@ import { AppText, Eyebrow } from '../../../shared/components/ui';
 import { InteractiveLineChart, ChartPoint } from '../components/charts';
 import { positionPnl } from '../domain/pricing';
 import { statusLabel } from '../domain/projectLifecycle';
+import { LiveWaitlistSheet } from '../components/sheets/LiveWaitlistSheet';
 import { analytics } from '../../../services/analytics';
 import {
   paperWalletService,
@@ -72,6 +73,7 @@ export default function PortfolioScreen({ navigation }: { navigation?: NavLike }
   const [history, setHistory] = useState<PortfolioHistoryPoint[]>([]);
   const [scrubPoint, setScrubPoint] = useState<ChartPoint | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [liveSheetOpen, setLiveSheetOpen] = useState(false);
 
   const load = useCallback(async () => {
     if (!user?.id) return;
@@ -158,6 +160,7 @@ export default function PortfolioScreen({ navigation }: { navigation?: NavLike }
     : `${signedMoney(dayChangeAmount)} (${dayPositive ? '+' : ''}${dayChangePct.toFixed(2)}%) Today`;
 
   return (
+    <>
     <ScrollView
       style={styles.container}
       contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 40 }]}
@@ -173,10 +176,15 @@ export default function PortfolioScreen({ navigation }: { navigation?: NavLike }
           <View style={styles.segmentOn}>
             <AppText variant="eyebrow" color={c.onAccent}>PAPER</AppText>
           </View>
-          <View style={styles.segmentOff} accessibilityLabel="Live investing is not open yet">
+          <Pressable
+            style={styles.segmentOff}
+            onPress={() => setLiveSheetOpen(true)}
+            accessibilityRole="button"
+            accessibilityLabel="Live investing status"
+          >
             <AppText variant="eyebrow" color={c.textFaint}>LIVE</AppText>
             <Ionicons name="lock-closed" size={10} color={c.textFaint} />
-          </View>
+          </Pressable>
         </View>
       </View>
 
@@ -381,6 +389,8 @@ export default function PortfolioScreen({ navigation }: { navigation?: NavLike }
         {DISCLOSURE}
       </AppText>
     </ScrollView>
+    <LiveWaitlistSheet visible={liveSheetOpen} onClose={() => setLiveSheetOpen(false)} />
+    </>
   );
 }
 
