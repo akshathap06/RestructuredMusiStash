@@ -53,7 +53,7 @@ export function ArtistHero({
         accessibilityIgnoresInvertColors
       />
       <LinearGradient
-        colors={['transparent', 'rgba(8,10,13,0.55)', colors.background]}
+        colors={['transparent', 'rgba(10,10,12,0.55)', colors.background]}
         locations={[0.35, 0.72, 1]}
         style={StyleSheet.absoluteFill}
       />
@@ -108,7 +108,7 @@ export function ArtistHero({
             accessibilityRole="button"
             accessibilityLabel={isFollowing ? 'Unfollow artist' : 'Follow artist'}
           >
-            <Text style={styles.followText}>
+            <Text style={[styles.followText, isFollowing && styles.followTextActive]}>
               {isFollowing ? 'Following' : 'Follow'}
             </Text>
           </Pressable>
@@ -137,7 +137,7 @@ export function ArtistHero({
               <Ionicons
                 name="play"
                 size={28}
-                color={colors.textPrimary}
+                color={colors.onAccent}
                 style={styles.playIcon}
               />
             </Pressable>
@@ -178,9 +178,10 @@ const styles = StyleSheet.create({
   },
   nameRow: { flexDirection: 'row', alignItems: 'center' },
   name: {
-    fontWeight: '700',
+    fontFamily: 'Manrope_800ExtraBold',
+    fontWeight: '800',
     color: colors.textPrimary,
-    letterSpacing: -0.5,
+    letterSpacing: -2,
     flexShrink: 1,
   },
   verified: { marginLeft: 8 },
@@ -197,10 +198,16 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   followBtnActive: {
-    backgroundColor: colors.accentSoft,
-    borderColor: colors.accent,
+    backgroundColor: colors.primary,
+    borderColor: colors.primary,
   },
-  followText: { fontSize: 15, fontWeight: '600', color: colors.textPrimary },
+  followText: {
+    fontFamily: 'Manrope_700Bold',
+    fontSize: 15,
+    fontWeight: '700',
+    color: colors.textPrimary,
+  },
+  followTextActive: { color: colors.onAccent },
   overflowBtn: {
     width: 44,
     height: 44,

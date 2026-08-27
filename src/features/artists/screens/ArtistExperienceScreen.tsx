@@ -271,5 +271,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  createBtnText: { color: '#fff', fontWeight: '600', fontSize: 16 },
+  createBtnText: {
+    color: colors.onAccent,
+    fontFamily: 'Manrope_800ExtraBold',
+    fontWeight: '800',
+    fontSize: 15,
+  },
 });

@@ -59,8 +59,8 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   btn: {
-    height: 52,
-    borderRadius: 14,
+    height: 54,
+    borderRadius: 16,
     backgroundColor: c.accent,
     alignItems: 'center',
     justifyContent: 'center',
@@ -70,9 +70,11 @@ const styles = StyleSheet.create({
     backgroundColor: c.accentPressed,
   },
   btnText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: c.textPrimary,
+    fontFamily: 'Manrope_800ExtraBold',
+    fontSize: 16.5,
+    fontWeight: '800',
+    letterSpacing: -0.2,
+    color: c.onAccent,
   },
 });
 

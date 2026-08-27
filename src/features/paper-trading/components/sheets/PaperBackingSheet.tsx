@@ -78,7 +78,7 @@ export function PaperBackingSheet({
       <BottomSheetFrame visible={visible} title="Paper backed" onClose={onClose}>
         <View style={styles.successBlock} accessibilityLabel="Paper backing successful">
           <View style={styles.checkCircle}>
-            <Ionicons name="checkmark" size={36} color={c.textPrimary} />
+            <Ionicons name="checkmark" size={36} color={c.onAccent} />
           </View>
           <Text style={styles.successTitle}>You're paper backed</Text>
           <Text style={styles.successBody}>
@@ -162,7 +162,7 @@ export function PaperBackingSheet({
         accessibilityState={{ disabled: isSubmitting || selectedAmount <= 0, busy: isSubmitting }}
       >
         {isSubmitting ? (
-          <ActivityIndicator color={c.textPrimary} />
+          <ActivityIndicator color={c.onAccent} />
         ) : (
           <Text style={styles.primaryBtnText}>
             Confirm · {formatMoney(selectedAmount)}
@@ -261,8 +261,8 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   primaryBtn: {
-    height: 52,
-    borderRadius: 14,
+    height: 54,
+    borderRadius: 16,
     backgroundColor: c.accent,
     alignItems: 'center',
     justifyContent: 'center',
@@ -272,9 +272,10 @@ const styles = StyleSheet.create({
     opacity: 0.55,
   },
   primaryBtnText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: c.textPrimary,
+    fontFamily: 'Manrope_800ExtraBold',
+    fontSize: 16.5,
+    fontWeight: '800',
+    color: c.onAccent,
   },
   successBlock: {
     alignItems: 'center',

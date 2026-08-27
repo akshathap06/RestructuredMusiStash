@@ -90,6 +90,7 @@ import AgenticManagerScreen from './src/features/ai/screens/AgenticManagerScreen
 import PortfolioScreen from './src/features/paper-trading/screens/PortfolioScreen';
 import PaperTradeScreen from './src/features/paper-trading/screens/PaperTradeScreen';
 import ProjectDetailScreen from './src/features/paper-trading/screens/ProjectDetailScreen';
+import BackingReceiptScreen from './src/features/paper-trading/screens/BackingReceiptScreen';
 import ExploreScreen from './src/features/explore/screens/ExploreScreen';
 import WaitlistScreen from './src/features/waitlist/screens/WaitlistScreen';
 import { featureFlags } from './src/config/featureFlags';
@@ -719,6 +720,11 @@ function MainStack() {
         name="ProjectDetail"
         component={ProjectDetailScreen}
         options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="BackingReceipt"
+        component={BackingReceiptScreen}
+        options={{ headerShown: false, gestureEnabled: false }}
       />
       <Stack.Screen
         name="CreateHub"

@@ -139,7 +139,8 @@ export default function ProjectDetailScreen({
         artistName: project.artistName,
         notional: amount,
       });
-      setPaperBalance(result.wallet.availableBalance);
+      const balanceAfter = result.wallet.availableBalance;
+      setPaperBalance(balanceAfter);
       // Backing totals are updated atomically inside rpc_open_paper_position;
       // reflect it optimistically here.
       setProject((prev) =>
@@ -152,6 +153,19 @@ export default function ProjectDetailScreen({
           : prev,
       );
       setSuccess(true);
+      setBackingOpen(false);
+      const shares = amount / (project.currentPaperSharePrice || 10);
+      navigation?.navigate?.('BackingReceipt', {
+        kind: 'back',
+        subtitle: `${project.title} by ${project.artistName}. Your position is live in the portfolio.`,
+        rows: [
+          { k: 'Amount', v: formatMoney(amount) },
+          { k: 'Paper shares', v: String(Math.round(shares * 100) / 100) },
+          { k: 'Share price', v: formatMoney(project.currentPaperSharePrice || 10) },
+          { k: 'Term', v: `${weeks} weeks` },
+          { k: 'Balance', v: formatMoney(balanceAfter) },
+        ],
+      });
     } catch (err) {
       const message =
         err instanceof Error ? err.message : 'Unable to open paper position';
@@ -319,8 +333,9 @@ const styles = StyleSheet.create({
     backgroundColor: c.accent,
   },
   notFoundBtnText: {
+    fontFamily: 'Manrope_800ExtraBold',
     fontSize: 15,
-    fontWeight: '600',
-    color: c.textPrimary,
+    fontWeight: '800',
+    color: c.onAccent,
   },
 });

@@ -16,7 +16,8 @@ type Variant =
   | 'bodySmall'
   | 'caption'
   | 'label'
-  | 'eyebrow';
+  | 'eyebrow'
+  | 'button';
 
 export interface AppTextProps extends TextProps {
   variant?: Variant;
