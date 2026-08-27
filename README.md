@@ -152,11 +152,98 @@ On branch `feature/v2-artist-project-experience`, the following were **deleted f
 
 ---
 
-## 10. Known issues / next steps
+## 10. Paper-investing engine (added 2026-08-28)
+
+Simulates MusiStash's future real-money artist-project investing so pricing,
+portfolio behaviour and project economics can be validated before regulated real
+money. **Simulation only — "MusiStash Cash", model prices and returns have no
+monetary value.** Object model: a fan takes a **position** in an artist
+**PROJECT** (not "artist stock").
+
+### Object & money model
+
+- **MusiStash Cash** — every account auto-gets $10,000 (`paper_wallets`, RLS
+  `auth.uid() = user_id`). Postgres `numeric` throughout (exact decimal — no float error).
+- **Funding progress ≠ model price** — two separate concepts:
+  - funding = `artist_projects.paper_backing_total / funding_goal`
+  - **model price** = `artist_projects.current_paper_share_price` per unit, moved
+    by the pricing engine (starts at `initial_price`, default $10).
+- `project_valuations` = the model-price time series (chart). `paper_portfolio_snapshots`
+  = per-user portfolio value over time (cash + mark-to-market), `cash`/`invested_value` split.
+- `paper_transactions.type` ∈ `PAPER_CASH_INITIALIZED | INVEST | SELL |
+  PROJECT_SETTLEMENT | FAILED_PROJECT_REFUND | PROJECT_CANCELLATION_REFUND | ADJUSTMENT`
+  (with `units` / `price`). `paper_events` = lightweight PoC analytics.
+
+### State machine  (`src/features/paper-trading/domain/projectLifecycle.ts`)
+
+`draft → funding → active → completed`  ·  `funding → failed`  ·  `* → cancelled`.
+Status is written **only** by the RPCs below — never by a component.
+
+### Pricing engine — deterministic, swappable  (`supabase/migrations/20260828000002_pricing_engine.sql`)
+
+`fn_project_model_price(project, at)` =
+`initial_price × demand(1+0.35·fundingProgress) × momentum(1±0.30) × milestones(1+0.15·done) × scenarioCurve × (1 ± dailyNoise)`,
+floored at 40% of base. `fn_daily_noise(seed, day)` is a bounded ±3% value seeded
+on `(project, date)` via `hashtextextended` → the same day always yields the same
+price (no per-render drift). `fn_project_scores()` derives
+`resonance / similarity / momentum / risk / projectedROI` (0–100) from
+`monthly_listeners`, `total_streams`, follower count, funding progress + velocity;
+written to flat columns and into `ai_analysis` jsonb.
+`rpc_reprice_project(id)` pulls the price 30% toward fair value, clamps the daily
+move to ±8%, appends a `project_valuations` mark, and is a no-op if priced in the
+last 20 h. Client mirror for preview: `src/features/paper-trading/domain/pricing.ts`
+(`calculateProjectFairValue`, `positionPnl`, `projectedExitProceeds`).
+
+### Lifecycle RPCs  (`supabase/migrations/20260828000003_lifecycle_settlement.sql`)
+
+| RPC | What |
+|---|---|
+| `rpc_invest(project, amount)` | debit MusiStash Cash, open/merge position (cost-weighted avg entry) at the **live** model price, bump funding totals; on goal-reached flips `funding → active` + sets `maturity_date = now()+term_weeks`. Alias: `rpc_open_paper_position`. |
+| `rpc_exit_position(project)` | early exit at `current_price × 0.98` (2% spread). Position → `closed`, realised P&L recorded. Architected so it can later be gated / replaced by a secondary market. |
+| `rpc_settle_project(project, reason?)` | **funded + matured** → settle every open position at the final model price; **funding + past deadline + under goal** → 90% refund (10% simulated loss); `reason='cancel'` → 100% refund. Idempotent: terminal-status guard + `where status='open'` set update → running twice pays once. |
+| `rpc_cancel_project(project)` | owner check (`artist_profiles.user_id = auth.uid()`) → `rpc_settle_project(id,'cancel')`. |
+| `rpc_expire_due_projects()` / `rpc_snapshot_all_portfolios()` / `rpc_reprice_all_projects()` | cron units. |
+
+**Schedule:** `pg_cron` job `musistash-paper-daily` (08:00 UTC) runs
+reprice-all → expire-due → snapshot-all. The client also calls
+`rpc_reprice_project` opportunistically when opening a stale project.
+
+### Services / screens
+
+- `paperWalletService`: `invest()` / `exitPosition()` / `getPositions()` /
+  `getClosedPositions()` / `getPortfolioSummary()` (cash, invested, unrealised +
+  realised P&L, return %).
+- `artistProjectService`: lifecycle fields, `getPriceHistory()`, `repriceIfStale()`, `cancel()`.
+- `ProjectDetailScreen`: **current model price + price sparkline** (distinct from
+  funding progress), status pill, "your position" card with **Exit** →
+  `BackingReceiptScreen`. `PortfolioScreen`: real P&L, **COMPLETED** section
+  (settled / refunded / closed), MusiStash Cash. Explore filters:
+  Trending / Closing soon / High resonance / High momentum / New.
+
+### Waitlist — removed
+
+The standalone Waitlist screen is gone. A `handle_new_user` trigger on
+`auth.users` auto-enrols **every** signup into `waitlist_entries` with
+`platform` (`app`/`web`/`unknown`, from `raw_user_meta_data`) + `source`;
+`authService.register` passes `platform:'app'`. All 95 existing users backfilled.
+`waitlist_overview` view for admin. Old CTAs now route to **Explore**.
+
+### Live-money mapping (contingencies)
+
+The settlement math is identical for real money — swap the paper wallet for a
+regulated ledger + escrow, add KYC/AML, and gate/replace `rpc_exit_position`
+with a real secondary market. **Not built (spec §23):** payments, Stripe, KYC,
+brokerage, order books, real securities, tax reporting.
+
+---
+
+## 11. Known issues / next steps
 
 1. 19 pre-existing TS errors in legacy screens (see §2) — cosmetic, worth a cleanup pass.
-2. Wire `paperWalletService` + `artistProjectService` from AsyncStorage to the Supabase tables (§7).
-3. RLS policies for the social tables (§7 warning).
-4. `summary.dayChangePct` is always 0 until real valuation marks exist (`project_valuations` is the intended source).
-5. Waitlist screen exists; `waitlist_entries` table is ready but not yet wired.
-6. Analytics is a console stub (`src/services/analytics.ts`) — wire PostHog/Amplitude when needed.
+2. `PaperTradeScreen` and `CreateHubScreen` are unreferenced (superseded) — dead but harmless.
+3. Portfolio chart is flat until 2+ daily snapshots accrue per user (cron / trades fill it).
+4. Legacy auth / onboarding / AgenticManager screens inherit the blue palette via
+   `theme.ts` aliases but aren't hand-tuned to the "Paper Mobile" design.
+5. Web signups need the web app to pass `options.data.platform='web'` to `supabase.auth.signUp`
+   (out of this repo) — the trigger already reads it.
+6. `AIAnalysisSheet` shows `factors` but not yet the 5 derived scores as a dedicated block.
