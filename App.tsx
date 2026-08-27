@@ -1169,11 +1169,8 @@ export default function App() {
     return () => clearTimeout(timer);
   }, []);
 
-  // Hold on a plain dark screen until Manrope is ready (bundled asset — instant);
-  // fontError still lets the app through on the system font.
-  if (!fontsLoaded && !fontError) {
-    return <View style={{ flex: 1, backgroundColor: '#0A0A0C' }} />;
-  }
+  // Non-blocking: render immediately; text swaps to Manrope the moment the
+  // family resolves (brief FOUT at worst). Never gate the whole app on fonts.
 
   return (
     <ErrorBoundary>
