@@ -5,12 +5,13 @@ import {
   RefreshControl,
   ScrollView,
   StyleSheet,
-  Text,
   View,
 } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '../../auth/AuthContext';
 import { MusiStashTheme } from '../../../styles/theme';
+import { AppText, Eyebrow } from '../../../shared/components/ui';
 import { InteractiveLineChart, ChartPoint } from '../components/charts';
 import {
   paperWalletService,
@@ -20,20 +21,9 @@ import {
   PortfolioSummary,
 } from '../services/paperWalletService';
 
-const C = {
-  background: MusiStashTheme.colors.background,
-  surface: MusiStashTheme.colors.surface,
-  borderSubtle: MusiStashTheme.colors.borderSubtle,
-  textPrimary: MusiStashTheme.colors.textPrimary,
-  textSecondary: MusiStashTheme.colors.textSecondary,
-  textMuted: MusiStashTheme.colors.textMuted,
-  accent: MusiStashTheme.colors.accent,
-  accentSoft: 'rgba(139,92,246,0.15)',
-  positive: MusiStashTheme.colors.positive,
-  negative: '#EF4444',
-};
+const c = MusiStashTheme.colors;
 
-const RANGES: HistoryRange[] = ['1D', '1W', '1M', '3M', '1Y', 'ALL'];
+const RANGES: HistoryRange[] = ['1W', '1M', '3M', '1Y', 'ALL'];
 
 const DISCLOSURE =
   'Paper trading simulation only. No real money, securities, ownership, or financial returns are being offered.';
@@ -43,22 +33,18 @@ type NavLike = {
   getParent?: () => NavLike | undefined;
 };
 
-type PortfolioScreenProps = {
-  navigation?: NavLike;
-};
-
-function formatMoney(n: number): string {
+function money(n: number, dp = 2): string {
   return `$${n.toLocaleString(undefined, {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
+    minimumFractionDigits: dp,
+    maximumFractionDigits: dp,
   })}`;
 }
 
-function formatSignedMoney(n: number): string {
-  return `${n >= 0 ? '+' : '-'}${formatMoney(Math.abs(n))}`;
+function signedMoney(n: number): string {
+  return `${n >= 0 ? '+' : '-'}${money(Math.abs(n))}`;
 }
 
-function formatScrubDate(t: number, range: HistoryRange): string {
+function scrubDate(t: number, range: HistoryRange): string {
   const d = new Date(t);
   if (range === '1D') {
     return d.toLocaleString(undefined, {
@@ -71,7 +57,7 @@ function formatScrubDate(t: number, range: HistoryRange): string {
   return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
 }
 
-export default function PortfolioScreen({ navigation }: PortfolioScreenProps) {
+export default function PortfolioScreen({ navigation }: { navigation?: NavLike }) {
   const { user } = useAuth();
   const insets = useSafeAreaInsets();
   const [loading, setLoading] = useState(true);
@@ -81,18 +67,24 @@ export default function PortfolioScreen({ navigation }: PortfolioScreenProps) {
   const [positions, setPositions] = useState<PaperPosition[]>([]);
   const [history, setHistory] = useState<PortfolioHistoryPoint[]>([]);
   const [scrubPoint, setScrubPoint] = useState<ChartPoint | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     if (!user?.id) return;
-    await paperWalletService.ensureWallet(user.id);
-    const [nextSummary, nextPositions, nextHistory] = await Promise.all([
-      paperWalletService.getPortfolioSummary(user.id),
-      paperWalletService.getPositions(user.id),
-      paperWalletService.getPortfolioHistory(user.id, range),
-    ]);
-    setSummary(nextSummary);
-    setPositions(nextPositions.filter((p) => p.status === 'open'));
-    setHistory(nextHistory);
+    setError(null);
+    try {
+      await paperWalletService.ensureWallet(user.id);
+      const [nextSummary, nextPositions, nextHistory] = await Promise.all([
+        paperWalletService.getPortfolioSummary(user.id),
+        paperWalletService.getPositions(user.id),
+        paperWalletService.getPortfolioHistory(user.id, range),
+      ]);
+      setSummary(nextSummary);
+      setPositions(nextPositions.filter((p) => p.status === 'open'));
+      setHistory(nextHistory);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Could not load your portfolio');
+    }
   }, [user?.id, range]);
 
   useEffect(() => {
@@ -119,31 +111,27 @@ export default function PortfolioScreen({ navigation }: PortfolioScreenProps) {
     }
   };
 
-  const goProject = (projectId: string) => {
+  const goProject = (projectId: string) =>
     navigation?.navigate?.('ProjectDetail', { projectId });
-  };
 
   const goWaitlist = () => {
-    if (navigation?.navigate) {
-      navigation.navigate('Waitlist');
-      return;
-    }
-    navigation?.getParent?.()?.navigate?.('Waitlist');
+    if (navigation?.navigate) navigation.navigate('Waitlist');
+    else navigation?.getParent?.()?.navigate?.('Waitlist');
   };
 
   const goKalebDemo = () => {
     const parent = navigation?.getParent?.();
-    if (parent?.navigate) {
-      parent.navigate('ArtistExperience', { artistId: 'artist_kaleb' });
-      return;
-    }
-    navigation?.navigate?.('ArtistExperience', { artistId: 'artist_kaleb' });
+    (parent?.navigate ?? navigation?.navigate)?.('ArtistExperience', {
+      artistId: '11111111-1111-4111-8111-111111111111',
+    });
   };
 
   if (!user?.id) {
     return (
       <View style={[styles.container, styles.centered]}>
-        <Text style={styles.emptyTitle}>Sign in to view your paper portfolio</Text>
+        <AppText variant="h4" color={c.textSecondary} center>
+          Sign in to view your paper portfolio
+        </AppText>
       </View>
     );
   }
@@ -151,23 +139,23 @@ export default function PortfolioScreen({ navigation }: PortfolioScreenProps) {
   if (loading && !summary) {
     return (
       <View style={[styles.container, styles.centered]}>
-        <ActivityIndicator size="large" color={C.accent} />
+        <ActivityIndicator size="large" color={c.accent} />
       </View>
     );
   }
 
   const total = summary?.total ?? 0;
+  const cash = summary?.cash ?? 0;
+  const deployed = summary?.positionsValue ?? 0;
   const dayChangePct = summary?.dayChangePct ?? 0;
   const dayChangeAmount = (total * dayChangePct) / 100;
   const dayPositive = dayChangeAmount >= 0;
-  const changeColor = dayPositive ? C.positive : C.negative;
 
   const headerValue = scrubPoint ? scrubPoint.v : total;
+  const fundedCount = positions.length;
   const headerSub = scrubPoint
-    ? formatScrubDate(scrubPoint.t, range)
-    : `${formatSignedMoney(dayChangeAmount)} (${dayPositive ? '+' : ''}${dayChangePct.toFixed(
-        2
-      )}%) Today`;
+    ? scrubDate(scrubPoint.t, range)
+    : `${signedMoney(dayChangeAmount)} (${dayPositive ? '+' : ''}${dayChangePct.toFixed(2)}%) Today`;
 
   return (
     <ScrollView
@@ -175,24 +163,66 @@ export default function PortfolioScreen({ navigation }: PortfolioScreenProps) {
       contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 40 }]}
       scrollEnabled={!scrubPoint}
       refreshControl={
-        <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={C.accent} />
+        <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={c.accent} />
       }
     >
-      <View style={styles.header}>
-        <Text style={styles.totalValue}>{formatMoney(headerValue)}</Text>
-        <Text style={[styles.changeLine, { color: scrubPoint ? C.textSecondary : changeColor }]}>
-          {headerSub}
-        </Text>
+      {/* Eyebrow + PAPER / LIVE toggle */}
+      <View style={styles.topRow}>
+        <Eyebrow>Paper Portfolio</Eyebrow>
+        <View style={styles.segment}>
+          <View style={styles.segmentOn}>
+            <AppText variant="eyebrow" color={c.onAccent}>PAPER</AppText>
+          </View>
+          <Pressable
+            style={styles.segmentOff}
+            onPress={goWaitlist}
+            accessibilityRole="button"
+            accessibilityLabel="Switch to live — join the waitlist"
+          >
+            <AppText variant="eyebrow" color={c.textFaint}>LIVE</AppText>
+            <Ionicons name="lock-closed" size={10} color={c.textFaint} />
+          </Pressable>
+        </View>
       </View>
 
-      <InteractiveLineChart
-        points={history}
-        height={190}
-        positiveColor={C.positive}
-        negativeColor={C.negative}
-        onScrub={setScrubPoint}
-      />
+      {/* Value */}
+      <View style={styles.valueRow}>
+        <AppText variant="money" style={styles.value}>
+          {money(headerValue)}
+        </AppText>
+        {!scrubPoint && (
+          <AppText
+            variant="h4"
+            tabular
+            color={dayPositive ? c.accentSolid : c.negative}
+            style={styles.deltaPill}
+          >
+            {`${dayPositive ? '+' : ''}${dayChangePct.toFixed(2)}%`}
+          </AppText>
+        )}
+      </View>
+      <AppText
+        variant="bodySmall"
+        color={scrubPoint ? c.textSecondary : dayPositive ? c.accentSolid : c.negative}
+        style={styles.sub}
+      >
+        {headerSub}
+      </AppText>
+      <AppText variant="bodySmall" color={c.textMuted} style={styles.sub2}>
+        {`${fundedCount} position${fundedCount === 1 ? '' : 's'} · all-time paper return`}
+      </AppText>
 
+      <View style={styles.chartWrap}>
+        <InteractiveLineChart
+          points={history}
+          height={130}
+          positiveColor={c.accent}
+          negativeColor={c.negative}
+          onScrub={setScrubPoint}
+        />
+      </View>
+
+      {/* Range */}
       <View style={styles.rangeRow}>
         {RANGES.map((r) => {
           const active = r === range;
@@ -205,36 +235,52 @@ export default function PortfolioScreen({ navigation }: PortfolioScreenProps) {
               accessibilityLabel={`Show ${r} history`}
               accessibilityState={{ selected: active }}
             >
-              <Text style={[styles.rangeText, active && styles.rangeTextActive]}>{r}</Text>
+              <AppText variant="label" color={active ? c.textPrimary : c.textFaint}>
+                {r}
+              </AppText>
             </Pressable>
           );
         })}
       </View>
 
-      <Pressable
-        style={styles.buyingPowerRow}
-        onPress={() => {}}
-        accessibilityRole="button"
-        accessibilityLabel={`Buying power ${formatMoney(summary?.cash ?? 0)}`}
-      >
-        <Text style={styles.buyingPowerLabel}>Buying power</Text>
-        <Text style={styles.buyingPowerValue}>{formatMoney(summary?.cash ?? 0)}</Text>
-      </Pressable>
+      {/* Stat pair */}
+      <View style={styles.statGrid}>
+        <View style={styles.statCard}>
+          <AppText variant="eyebrow" color={c.textFaint}>BUYING POWER</AppText>
+          <AppText variant="h2" tabular style={styles.statValue}>
+            {money(cash, 0)}
+          </AppText>
+        </View>
+        <View style={styles.statCard}>
+          <AppText variant="eyebrow" color={c.textFaint}>DEPLOYED</AppText>
+          <AppText variant="h2" tabular style={styles.statValue}>
+            {money(deployed, 0)}
+          </AppText>
+        </View>
+      </View>
 
-      <Text style={styles.disclosure}>{DISCLOSURE}</Text>
+      {error ? (
+        <AppText variant="bodySmall" color={c.negative} style={styles.error}>
+          {error}
+        </AppText>
+      ) : null}
 
-      <Text style={styles.sectionTitle}>Positions</Text>
+      <AppText variant="eyebrow" color={c.textMuted} style={styles.positionsTitle}>
+        POSITIONS
+      </AppText>
 
       {positions.length === 0 ? (
         <View style={styles.emptyState}>
-          <Text style={styles.emptyTitle}>No positions yet</Text>
+          <AppText variant="h4" color={c.textSecondary} center>
+            No positions yet
+          </AppText>
           <Pressable
             style={styles.demoButton}
             onPress={goKalebDemo}
             accessibilityRole="button"
-            accessibilityLabel="Open Kaleb demo"
+            accessibilityLabel="Open the Kaleb demo project"
           >
-            <Text style={styles.demoButtonText}>Open Kaleb demo</Text>
+            <AppText variant="label" color={c.accent}>Open the Kaleb demo</AppText>
           </Pressable>
         </View>
       ) : (
@@ -242,203 +288,148 @@ export default function PortfolioScreen({ navigation }: PortfolioScreenProps) {
           const value = position.units * position.currentUnitPrice;
           const pnl = value - position.costBasis;
           const pnlPct = position.costBasis > 0 ? (pnl / position.costBasis) * 100 : 0;
-          const positive = pnl >= 0;
+          const up = pnl >= 0;
           return (
-            <View key={position.id}>
-              {index > 0 ? <View style={styles.divider} /> : null}
-              <Pressable
-                style={styles.positionRow}
-                onPress={() => goProject(position.projectId)}
-                accessibilityRole="button"
-                accessibilityLabel={`${position.artistName}, ${position.projectTitle}, ${formatMoney(
-                  value
-                )}`}
-              >
-                <View style={styles.positionLeft}>
-                  <Text style={styles.positionArtist}>{position.artistName}</Text>
-                  <Text style={styles.positionProject}>{position.projectTitle}</Text>
-                </View>
-                <View style={styles.positionRight}>
-                  <Text style={styles.positionValue}>{formatMoney(value)}</Text>
-                  <Text
-                    style={[styles.positionPnl, { color: positive ? C.positive : C.negative }]}
-                  >
-                    {positive ? '+' : ''}
-                    {pnlPct.toFixed(2)}%
-                  </Text>
-                </View>
-              </Pressable>
-            </View>
+            <Pressable
+              key={position.id}
+              style={[styles.positionRow, index > 0 && styles.rowDivider]}
+              onPress={() => goProject(position.projectId)}
+              accessibilityRole="button"
+              accessibilityLabel={`${position.artistName}, ${position.projectTitle}, ${money(value)}`}
+            >
+              <View style={styles.positionMark}>
+                <AppText variant="h4" color={c.textFaint}>
+                  {(position.projectTitle || '?').charAt(0).toUpperCase()}
+                </AppText>
+              </View>
+              <View style={styles.positionLeft}>
+                <AppText variant="h4" numberOfLines={1}>
+                  {position.projectTitle}
+                </AppText>
+                <AppText variant="bodySmall" color={c.textMuted} numberOfLines={1}>
+                  {`${position.artistName} · ${position.units.toFixed(0)} shares`}
+                </AppText>
+              </View>
+              <View style={styles.positionRight}>
+                <AppText variant="h4" tabular>
+                  {money(value)}
+                </AppText>
+                <AppText
+                  variant="bodySmall"
+                  tabular
+                  color={up ? c.accentSolid : c.textMuted}
+                  style={styles.positionPnl}
+                >
+                  {`${up ? '+' : ''}${pnlPct.toFixed(1)}%`}
+                </AppText>
+              </View>
+            </Pressable>
           );
         })
       )}
 
-      <Pressable
-        style={styles.waitlistRow}
-        onPress={goWaitlist}
-        accessibilityRole="button"
-        accessibilityLabel="Join real-money waitlist"
-      >
-        <Text style={styles.waitlistText}>Join real-money waitlist</Text>
-      </Pressable>
+      <AppText variant="caption" color={c.textFaint} style={styles.disclosure}>
+        {DISCLOSURE}
+      </AppText>
     </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: C.background,
-  },
-  content: {
-    paddingHorizontal: 20,
-    paddingTop: 16,
-  },
-  centered: {
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  header: {
-    marginTop: 8,
-  },
-  totalValue: {
-    fontSize: 34,
-    fontWeight: '700',
-    color: C.textPrimary,
-    fontVariant: ['tabular-nums'],
-  },
-  changeLine: {
-    marginTop: 4,
-    fontSize: 14,
-    fontWeight: '500',
-    fontVariant: ['tabular-nums'],
-  },
-  rangeRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginTop: 8,
-    marginBottom: 20,
-  },
-  rangeButton: {
-    height: 32,
-    paddingHorizontal: 12,
-    borderRadius: 16,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  rangeButtonActive: {
-    backgroundColor: C.accentSoft,
-  },
-  rangeText: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: C.textMuted,
-  },
-  rangeTextActive: {
-    color: C.accent,
-  },
-  buyingPowerRow: {
+  container: { flex: 1, backgroundColor: c.background },
+  content: { paddingHorizontal: 20, paddingTop: 10 },
+  centered: { alignItems: 'center', justifyContent: 'center' },
+
+  topRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: C.surface,
-    borderRadius: 12,
+  },
+  segment: {
+    flexDirection: 'row',
+    padding: 3,
+    borderRadius: 999,
+    backgroundColor: c.surface,
     borderWidth: 1,
-    borderColor: C.borderSubtle,
-    paddingHorizontal: 16,
-    paddingVertical: 14,
+    borderColor: c.line,
   },
-  buyingPowerLabel: {
-    fontSize: 14,
-    color: C.textSecondary,
+  segmentOn: {
+    minHeight: 30,
+    paddingHorizontal: 14,
+    borderRadius: 999,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: c.accent,
   },
-  buyingPowerValue: {
-    fontSize: 15,
-    fontWeight: '600',
-    color: C.textPrimary,
-    fontVariant: ['tabular-nums'],
+  segmentOff: {
+    minHeight: 30,
+    paddingHorizontal: 14,
+    borderRadius: 999,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
   },
-  disclosure: {
-    fontSize: 11,
-    lineHeight: 15,
-    color: C.textMuted,
-    marginTop: 12,
-    marginBottom: 24,
+
+  valueRow: { flexDirection: 'row', alignItems: 'flex-end', gap: 12, marginTop: 10 },
+  value: { color: c.textPrimary },
+  deltaPill: { paddingBottom: 6 },
+  sub: { marginTop: 4 },
+  sub2: { marginTop: 2 },
+
+  chartWrap: { marginTop: 16 },
+
+  rangeRow: { flexDirection: 'row', gap: 6, marginTop: 12 },
+  rangeButton: {
+    flex: 1,
+    height: 34,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  sectionTitle: {
-    fontSize: 17,
-    fontWeight: '600',
-    color: C.textPrimary,
-    marginBottom: 4,
+  rangeButtonActive: { backgroundColor: c.surfaceElevated },
+
+  statGrid: { flexDirection: 'row', gap: 10, marginTop: 20 },
+  statCard: {
+    flex: 1,
+    padding: 14,
+    borderRadius: 14,
+    backgroundColor: c.surface,
+    borderWidth: 1,
+    borderColor: c.line,
   },
+  statValue: { marginTop: 5 },
+
+  error: { marginTop: 14 },
+
+  positionsTitle: { marginTop: 26, marginBottom: 6 },
   positionRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingVertical: 14,
+    gap: 14,
+    paddingVertical: 13,
+    minHeight: 66,
   },
-  positionLeft: {
-    flex: 1,
-    paddingRight: 12,
-  },
-  positionArtist: {
-    fontSize: 15,
-    fontWeight: '600',
-    color: C.textPrimary,
-  },
-  positionProject: {
-    fontSize: 13,
-    color: C.textSecondary,
-    marginTop: 2,
-  },
-  positionRight: {
-    alignItems: 'flex-end',
-  },
-  positionValue: {
-    fontSize: 15,
-    fontWeight: '600',
-    color: C.textPrimary,
-    fontVariant: ['tabular-nums'],
-  },
-  positionPnl: {
-    fontSize: 13,
-    fontWeight: '500',
-    marginTop: 2,
-    fontVariant: ['tabular-nums'],
-  },
-  divider: {
-    height: StyleSheet.hairlineWidth,
-    backgroundColor: C.borderSubtle,
-  },
-  emptyState: {
-    paddingVertical: 28,
+  rowDivider: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: c.listDivider },
+  positionMark: {
+    width: 44,
+    height: 44,
+    borderRadius: 10,
+    backgroundColor: c.surfaceElevated,
     alignItems: 'center',
+    justifyContent: 'center',
   },
-  emptyTitle: {
-    fontSize: 15,
-    color: C.textSecondary,
-    textAlign: 'center',
-  },
+  positionLeft: { flex: 1, minWidth: 0 },
+  positionRight: { alignItems: 'flex-end' },
+  positionPnl: { marginTop: 2 },
+
+  emptyState: { paddingVertical: 28, alignItems: 'center' },
   demoButton: {
     marginTop: 16,
     paddingHorizontal: 20,
     paddingVertical: 10,
-    borderRadius: 10,
-    backgroundColor: C.accentSoft,
+    borderRadius: 12,
+    backgroundColor: c.accentTint,
   },
-  demoButtonText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: C.accent,
-  },
-  waitlistRow: {
-    marginTop: 28,
-    alignItems: 'center',
-    paddingVertical: 12,
-  },
-  waitlistText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: C.accent,
-  },
+
+  disclosure: { marginTop: 26, lineHeight: 16 },
 });

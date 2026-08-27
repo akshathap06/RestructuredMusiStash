@@ -649,7 +649,7 @@ function MainTabs({ navigation: parentNavigation }: { navigation: any }) {
         name="Explore"
         component={ExploreScreen}
         options={({ navigation }) => ({
-          header: () => <UniversalHeader navigation={navigation} title="Explore" />,
+          header: () => <UniversalHeader navigation={navigation} title="" />,
         })}
         initialParams={{ parentNavigation }}
       />
@@ -662,7 +662,7 @@ function MainTabs({ navigation: parentNavigation }: { navigation: any }) {
         name="Portfolio"
         component={PortfolioScreen}
         options={({ navigation }) => ({
-          header: () => <UniversalHeader navigation={navigation} title="Portfolio" />,
+          header: () => <UniversalHeader navigation={navigation} title="" />,
         })}
       />
       <Tab.Screen
