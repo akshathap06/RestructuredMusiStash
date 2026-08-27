@@ -296,7 +296,9 @@ export default function ProjectDetailScreen({
         keyboardShouldPersistTaps="handled"
       >
         <View style={styles.badgeRow}>
-          <Text style={styles.simBadge}>{PAPER_DISCLOSURE_SHORT}</Text>
+          <Text style={styles.simBadge} numberOfLines={1}>
+            {PAPER_DISCLOSURE_SHORT}
+          </Text>
           <View
             style={[
               styles.statusPill,
@@ -469,11 +471,13 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+    gap: 10,
     marginHorizontal: 16,
     marginTop: 4,
     marginBottom: 8,
   },
   statusPill: {
+    flexShrink: 0,
     paddingHorizontal: 10,
     paddingVertical: 5,
     borderRadius: 999,
@@ -505,9 +509,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   simBadge: {
-    marginHorizontal: 16,
-    marginTop: 4,
-    marginBottom: 4,
+    flexShrink: 1,
     fontSize: 11,
     fontWeight: '600',
     letterSpacing: 0.3,

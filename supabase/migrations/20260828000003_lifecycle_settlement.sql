@@ -35,13 +35,13 @@ language plpgsql
 security definer
 set search_path = public
 as $$
-declare v_uid uuid := auth.uid(); v_new boolean;
+declare v_uid uuid := auth.uid(); v_rows integer;
 begin
   if v_uid is null then raise exception 'Not authenticated' using errcode = '28000'; end if;
   insert into public.paper_wallets (user_id) values (v_uid)
   on conflict (user_id) do nothing;
-  get diagnostics v_new = row_count;
-  if v_new > 0 then
+  get diagnostics v_rows = row_count;
+  if v_rows > 0 then
     insert into public.paper_transactions (user_id, type, amount, balance_after)
     values (v_uid, 'PAPER_CASH_INITIALIZED', 10000, 10000);
   end if;
