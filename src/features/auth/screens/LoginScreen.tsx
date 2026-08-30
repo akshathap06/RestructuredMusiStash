@@ -18,8 +18,10 @@ import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../../contexts/AuthContext';
 import { authService } from '../services/authService';
 import { supabase } from '../../../lib/supabase';
+import { MusiStashTheme } from '../../../styles/theme';
 
 const { width, height } = Dimensions.get('window');
+const c = MusiStashTheme.colors;
 
 export default function LoginScreen({ navigation }: any) {
   const [email, setEmail] = useState('');
@@ -161,8 +163,8 @@ export default function LoginScreen({ navigation }: any) {
         }, 2000);
       } else {
         setIsAppleLoading(false);
-        if (result.error !== 'Sign in cancelled') {
-          Alert.alert('Sign In Failed', result.error || 'Failed to sign in with Apple.');
+        if (result.message !== 'Sign-in canceled') {
+          Alert.alert('Sign In Failed', result.message || 'Failed to sign in with Apple.');
         }
       }
     } catch (error) {
@@ -204,7 +206,7 @@ export default function LoginScreen({ navigation }: any) {
 
   return (
     <View style={styles.container}>
-      <StatusBar barStyle="light-content" backgroundColor="#000000" />
+      <StatusBar barStyle="light-content" backgroundColor={c.background} />
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={styles.keyboardView}
@@ -219,17 +221,17 @@ export default function LoginScreen({ navigation }: any) {
                 resizeMode="contain"
               />
             </View>
-            <Text style={styles.subtitle}>Connect through music</Text>
+            <Text style={styles.subtitle}>Sign in to your paper portfolio</Text>
           </View>
 
           {/* Login Form */}
           <View style={styles.formContainer}>
             <View style={styles.inputContainer}>
-              <Ionicons name="mail-outline" size={20} color="#94A3B8" style={styles.inputIcon} />
+              <Ionicons name="mail-outline" size={20} color={c.textMuted} style={styles.inputIcon} />
               <TextInput
                 style={styles.input}
                 placeholder="Email"
-                placeholderTextColor="#94A3B8"
+                placeholderTextColor={c.textFaint}
                 value={email}
                 onChangeText={setEmail}
                 keyboardType="email-address"
@@ -239,11 +241,11 @@ export default function LoginScreen({ navigation }: any) {
             </View>
 
             <View style={styles.inputContainer}>
-              <Ionicons name="lock-closed-outline" size={20} color="#94A3B8" style={styles.inputIcon} />
+              <Ionicons name="lock-closed-outline" size={20} color={c.textMuted} style={styles.inputIcon} />
               <TextInput
                 style={styles.input}
                 placeholder="Password"
-                placeholderTextColor="#94A3B8"
+                placeholderTextColor={c.textFaint}
                 value={password}
                 onChangeText={setPassword}
                 secureTextEntry={!showPassword}
@@ -256,7 +258,7 @@ export default function LoginScreen({ navigation }: any) {
                 <Ionicons
                   name={showPassword ? 'eye-off-outline' : 'eye-outline'}
                   size={20}
-                  color="#94A3B8"
+                  color={c.textMuted}
                 />
               </TouchableOpacity>
             </View>
@@ -297,9 +299,9 @@ export default function LoginScreen({ navigation }: any) {
                   disabled={isAppleLoading}
                 >
                   {isAppleLoading ? (
-                    <ActivityIndicator size="small" color="#000000" />
+                    <ActivityIndicator size="small" color={c.textPrimary} />
                   ) : (
-                    <Ionicons name="logo-apple" size={24} color="#000000" />
+                    <Ionicons name="logo-apple" size={24} color={c.textPrimary} />
                   )}
                 </TouchableOpacity>
               )}
@@ -311,9 +313,9 @@ export default function LoginScreen({ navigation }: any) {
                 disabled={isGoogleLoading}
               >
                 {isGoogleLoading ? (
-                  <ActivityIndicator size="small" color="#000000" />
+                  <ActivityIndicator size="small" color={c.textPrimary} />
                 ) : (
-                  <Ionicons name="logo-google" size={22} color="#000000" />
+                  <Ionicons name="logo-google" size={22} color={c.textPrimary} />
                 )}
               </TouchableOpacity>
             </View>
@@ -335,7 +337,7 @@ export default function LoginScreen({ navigation }: any) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#000000',
+    backgroundColor: c.background,
   },
   keyboardView: {
     flex: 1,
@@ -349,14 +351,14 @@ const styles = StyleSheet.create({
   },
   header: {
     alignItems: 'center',
-    marginBottom: 60,
-    marginTop: 40,
+    marginBottom: 48,
+    marginTop: 32,
   },
   logoContainer: {
     width: '100%',
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 15,
+    marginBottom: 14,
   },
   logoImage: {
     width: 120,
@@ -368,14 +370,15 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
   },
   title: {
-    fontSize: 36,
-    fontWeight: 'bold',
-    color: '#FFFFFF',
+    fontFamily: MusiStashTheme.fonts.extrabold,
+    fontSize: 32,
+    color: c.textPrimary,
     marginBottom: 8,
   },
   subtitle: {
-    fontSize: 16,
-    color: '#94A3B8',
+    fontFamily: MusiStashTheme.fonts.regular,
+    fontSize: 15,
+    color: c.textMuted,
     textAlign: 'center',
   },
   formContainer: {
@@ -384,69 +387,70 @@ const styles = StyleSheet.create({
   inputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(40, 40, 40, 0.8)',
-    borderRadius: 12,
-    marginBottom: 20,
+    backgroundColor: c.surface,
+    borderRadius: 14,
+    marginBottom: 14,
     paddingHorizontal: 16,
     borderWidth: 1,
-    borderColor: 'rgba(139, 92, 246, 0.2)',
+    borderColor: c.line,
   },
   inputIcon: {
     marginRight: 12,
   },
   input: {
     flex: 1,
-    height: 56,
-    color: '#FFFFFF',
+    height: 54,
+    color: c.textPrimary,
+    fontFamily: MusiStashTheme.fonts.medium,
     fontSize: 16,
   },
   eyeIcon: {
     padding: 8,
   },
   loginButton: {
-    marginTop: 20,
-    paddingVertical: 18,
-    backgroundColor: '#3B82F6',
-    borderRadius: 30,
+    marginTop: 18,
+    minHeight: 54,
+    justifyContent: 'center',
+    backgroundColor: c.accent,
+    borderRadius: 16,
     alignItems: 'center',
-    shadowColor: '#3B82F6',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 8,
   },
   loginButtonDisabled: {
-    opacity: 0.7,
-    backgroundColor: '#4B5563',
+    opacity: 0.6,
   },
   loginButtonText: {
-    color: '#FFFFFF',
+    color: c.onAccent,
+    fontFamily: MusiStashTheme.fonts.extrabold,
     fontSize: 16,
-    fontWeight: '600',
   },
   forgotPassword: {
     alignItems: 'center',
-    marginTop: 20,
+    marginTop: 18,
+    minHeight: 32,
+    justifyContent: 'center',
   },
   forgotPasswordText: {
-    color: '#3B82F6',
+    color: c.accentSolid,
+    fontFamily: MusiStashTheme.fonts.semibold,
     fontSize: 14,
-    fontWeight: '500',
   },
   divider: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginVertical: 30,
+    marginVertical: 26,
   },
   dividerLine: {
     flex: 1,
-    height: 1,
-    backgroundColor: 'rgba(148, 163, 184, 0.3)',
+    height: StyleSheet.hairlineWidth,
+    backgroundColor: c.line,
   },
   dividerText: {
-    color: '#94A3B8',
-    marginHorizontal: 16,
-    fontSize: 14,
+    color: c.textFaint,
+    fontFamily: MusiStashTheme.fonts.medium,
+    marginHorizontal: 14,
+    fontSize: 12,
+    textTransform: 'uppercase',
+    letterSpacing: 0.6,
   },
   registerContainer: {
     flexDirection: 'row',
@@ -454,32 +458,30 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   registerText: {
-    color: '#94A3B8',
+    color: c.textMuted,
+    fontFamily: MusiStashTheme.fonts.regular,
     fontSize: 14,
   },
   registerLink: {
-    color: '#3B82F6',
+    color: c.accentSolid,
+    fontFamily: MusiStashTheme.fonts.bold,
     fontSize: 14,
-    fontWeight: 'bold',
   },
   socialButtonsContainer: {
     flexDirection: 'row',
     justifyContent: 'center',
-    gap: 16,
-    marginBottom: 30,
+    gap: 14,
+    marginBottom: 28,
   },
   googleButton: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    backgroundColor: '#FFFFFF',
+    width: 54,
+    height: 54,
+    borderRadius: 16,
+    backgroundColor: c.surface,
+    borderWidth: 1,
+    borderColor: c.borderStrong,
     justifyContent: 'center',
     alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
-    elevation: 4,
   },
   socialButtonDisabled: {
     opacity: 0.6,

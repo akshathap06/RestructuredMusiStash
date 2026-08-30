@@ -91,6 +91,8 @@ import PortfolioScreen from './src/features/paper-trading/screens/PortfolioScree
 import PaperTradeScreen from './src/features/paper-trading/screens/PaperTradeScreen';
 import ProjectDetailScreen from './src/features/paper-trading/screens/ProjectDetailScreen';
 import BackingReceiptScreen from './src/features/paper-trading/screens/BackingReceiptScreen';
+import WatchlistScreen from './src/features/paper-trading/screens/WatchlistScreen';
+import TransactionHistoryScreen from './src/features/paper-trading/screens/TransactionHistoryScreen';
 import ExploreScreen from './src/features/explore/screens/ExploreScreen';
 import { featureFlags } from './src/config/featureFlags';
 
@@ -534,9 +536,19 @@ function ProfileStackNavigator() {
         },
       }}
     >
-      <ProfileStack.Screen 
-        name="ProfileMain" 
+      <ProfileStack.Screen
+        name="ProfileMain"
         component={ProfileV2Screen}
+        options={{ headerShown: false }}
+      />
+      <ProfileStack.Screen
+        name="Watchlist"
+        component={WatchlistScreen}
+        options={{ headerShown: false }}
+      />
+      <ProfileStack.Screen
+        name="TransactionHistory"
+        component={TransactionHistoryScreen}
         options={{ headerShown: false }}
       />
       <ProfileStack.Screen 
@@ -714,6 +726,16 @@ function MainStack() {
         options={{ headerShown: false }}
       />
       <Stack.Screen
+        name="Watchlist"
+        component={WatchlistScreen}
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="TransactionHistory"
+        component={TransactionHistoryScreen}
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
         name="BackingReceipt"
         component={BackingReceiptScreen}
         options={{ headerShown: false, gestureEnabled: false }}
@@ -817,10 +839,10 @@ function AuthStack() {
           fontWeight: 'bold',
         },
       }}
-      initialRouteName="Welcome"
+      initialRouteName="Intro"
     >
-      <Stack.Screen 
-        name="Welcome" 
+      <Stack.Screen
+        name="Welcome"
         component={WelcomeCarouselScreen}
         options={{ headerShown: false }}
       />

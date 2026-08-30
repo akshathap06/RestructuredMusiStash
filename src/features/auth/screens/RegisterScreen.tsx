@@ -14,6 +14,9 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { emailVerificationService } from '../services/emailVerificationService';
+import { MusiStashTheme } from '../../../styles/theme';
+
+const c = MusiStashTheme.colors;
 
 export default function RegisterScreen({ navigation }: any) {
   const [email, setEmail] = useState('');
@@ -72,7 +75,7 @@ export default function RegisterScreen({ navigation }: any) {
 
   return (
     <View style={styles.container}>
-      <StatusBar barStyle="light-content" backgroundColor="#000000" />
+      <StatusBar barStyle="light-content" backgroundColor={c.background} />
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={styles.keyboardView}
@@ -84,7 +87,7 @@ export default function RegisterScreen({ navigation }: any) {
               style={styles.backButton}
               onPress={navigateToLogin}
             >
-              <Ionicons name="arrow-back" size={24} color="#FFFFFF" />
+              <Ionicons name="arrow-back" size={24} color={c.textPrimary} />
             </TouchableOpacity>
             <View style={styles.logoContainer}>
               <Image 
@@ -93,8 +96,8 @@ export default function RegisterScreen({ navigation }: any) {
                 resizeMode="contain"
               />
             </View>
-            <Text style={styles.title}>Join MusiStash</Text>
-            <Text style={styles.subtitle}>Start your musical journey</Text>
+            <Text style={styles.title}>Create your account</Text>
+            <Text style={styles.subtitle}>Paper-invest in music with simulated MusiStash Cash</Text>
           </View>
 
           {/* Registration Form */}
@@ -104,11 +107,11 @@ export default function RegisterScreen({ navigation }: any) {
             </Text>
 
             <View style={styles.inputContainer}>
-              <Ionicons name="mail-outline" size={20} color="#94A3B8" style={styles.inputIcon} />
+              <Ionicons name="mail-outline" size={20} color={c.textMuted} style={styles.inputIcon} />
               <TextInput
                 style={styles.input}
                 placeholder="Email"
-                placeholderTextColor="#94A3B8"
+                placeholderTextColor={c.textFaint}
                 value={email}
                 onChangeText={setEmail}
                 keyboardType="email-address"
@@ -153,7 +156,7 @@ export default function RegisterScreen({ navigation }: any) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#000000',
+    backgroundColor: c.background,
   },
   keyboardView: {
     flex: 1,
@@ -165,7 +168,7 @@ const styles = StyleSheet.create({
   },
   header: {
     alignItems: 'center',
-    marginBottom: 40,
+    marginBottom: 36,
     marginTop: 40,
   },
   backButton: {
@@ -175,126 +178,127 @@ const styles = StyleSheet.create({
     padding: 8,
   },
   logoContainer: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    backgroundColor: 'rgba(139, 92, 246, 0.1)',
+    width: 72,
+    height: 72,
+    borderRadius: 20,
+    backgroundColor: c.accentTint,
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 16,
   },
   logoImage: {
-    width: 60,
-    height: 60,
+    width: 52,
+    height: 52,
   },
   title: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    color: '#FFFFFF',
+    fontFamily: MusiStashTheme.fonts.extrabold,
+    fontSize: 26,
+    color: c.textPrimary,
     marginBottom: 6,
   },
   subtitle: {
+    fontFamily: MusiStashTheme.fonts.regular,
     fontSize: 14,
-    color: '#94A3B8',
+    color: c.textMuted,
     textAlign: 'center',
+    maxWidth: 280,
   },
   formContainer: {
     width: '100%',
   },
   description: {
-    color: '#94A3B8',
+    color: c.textMuted,
+    fontFamily: MusiStashTheme.fonts.regular,
     fontSize: 14,
     textAlign: 'center',
-    marginBottom: 24,
+    marginBottom: 22,
     lineHeight: 20,
   },
   inputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(40, 40, 40, 0.8)',
-    borderRadius: 10,
+    backgroundColor: c.surface,
+    borderRadius: 14,
     marginBottom: 16,
-    paddingHorizontal: 14,
+    paddingHorizontal: 16,
     borderWidth: 1,
-    borderColor: 'rgba(139, 92, 246, 0.2)',
+    borderColor: c.line,
   },
   inputIcon: {
     marginRight: 10,
   },
   input: {
     flex: 1,
-    height: 48,
-    color: '#FFFFFF',
-    fontSize: 15,
+    height: 52,
+    color: c.textPrimary,
+    fontFamily: MusiStashTheme.fonts.medium,
+    fontSize: 16,
   },
   eyeIcon: {
     padding: 8,
   },
   passwordRequirements: {
-    backgroundColor: 'rgba(30, 41, 59, 0.5)',
-    borderRadius: 10,
+    backgroundColor: c.surface,
+    borderRadius: 12,
     padding: 12,
     marginBottom: 16,
   },
   requirementsTitle: {
-    color: '#94A3B8',
+    color: c.textMuted,
     fontSize: 14,
     fontWeight: '500',
     marginBottom: 8,
   },
   requirement: {
-    color: '#64748B',
+    color: c.textFaint,
     fontSize: 12,
     marginBottom: 4,
   },
   requirementMet: {
-    color: '#3B82F6',
+    color: c.accentSolid,
   },
   registerButton: {
-    marginTop: 20,
-    paddingVertical: 18,
-    backgroundColor: '#3B82F6',
-    borderRadius: 30,
+    marginTop: 18,
+    minHeight: 54,
+    justifyContent: 'center',
+    backgroundColor: c.accent,
+    borderRadius: 16,
     alignItems: 'center',
-    shadowColor: '#3B82F6',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 8,
   },
   registerButtonDisabled: {
-    opacity: 0.7,
-    backgroundColor: '#4B5563',
+    opacity: 0.6,
   },
   registerButtonText: {
-    color: '#FFFFFF',
+    color: c.onAccent,
+    fontFamily: MusiStashTheme.fonts.extrabold,
     fontSize: 16,
-    fontWeight: '600',
   },
   termsText: {
-    color: '#94A3B8',
+    color: c.textFaint,
+    fontFamily: MusiStashTheme.fonts.regular,
     fontSize: 12,
     textAlign: 'center',
-    marginTop: 20,
+    marginTop: 18,
     lineHeight: 18,
   },
   termsLink: {
-    color: '#3B82F6',
-    fontWeight: '500',
+    color: c.textMuted,
+    fontFamily: MusiStashTheme.fonts.semibold,
   },
   loginContainer: {
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
-    marginTop: 30,
+    marginTop: 26,
   },
   loginText: {
-    color: '#94A3B8',
+    color: c.textMuted,
+    fontFamily: MusiStashTheme.fonts.regular,
     fontSize: 14,
   },
   loginLink: {
-    color: '#3B82F6',
+    color: c.accentSolid,
+    fontFamily: MusiStashTheme.fonts.bold,
     fontSize: 14,
-    fontWeight: 'bold',
   },
 });

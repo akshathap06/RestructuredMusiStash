@@ -632,6 +632,20 @@ class AuthService {
       return { success: false, message: e?.message || 'Apple Sign-In failed' };
     }
   }
+
+  /**
+   * Whether "Continue with Apple" should be offered — iOS only, and only when
+   * the device actually supports it. Callers gate the Apple button on this.
+   */
+  async isAppleSignInAvailable(): Promise<boolean> {
+    if (Platform.OS !== 'ios') return false;
+    try {
+      const AppleAuthentication = await import('expo-apple-authentication');
+      return await AppleAuthentication.isAvailableAsync();
+    } catch {
+      return false;
+    }
+  }
 }
 
 export const authService = new AuthService();
