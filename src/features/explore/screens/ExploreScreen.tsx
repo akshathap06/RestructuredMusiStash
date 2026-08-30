@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Image,
@@ -15,6 +15,7 @@ import { MusiStashTheme } from '../../../styles/theme';
 import { AppText, Eyebrow } from '../../../shared/components/ui';
 import { ChipRow } from '../../../shared/components/ui/Chip';
 import { paperWalletService } from '../../paper-trading/services/paperWalletService';
+import { artistProjectService } from '../../artists/services/artistProjectService';
 import {
   discoveryService,
   DiscoveryArtist,
@@ -47,15 +48,35 @@ export default function ExploreScreen(props: any) {
   const [projects, setProjects] = useState<DiscoveryProject[]>([]);
   const [artists, setArtists] = useState<DiscoveryArtist[]>([]);
   const [buyingPower, setBuyingPower] = useState<number | null>(null);
+  const repricedThisMount = useRef(false);
 
   const load = useCallback(async () => {
     setError(null);
     try {
-      const [feat, live, rising] = await Promise.all([
+      let [feat, live, rising] = await Promise.all([
         discoveryService.getFeaturedProject(),
         discoveryService.getLiveProjects(12),
         discoveryService.getRisingArtists(8),
       ]);
+
+      // Once per mount: reprice the hero + the first few cards so their prices
+      // (and any P&L elsewhere) reflect today's move.
+      if (!repricedThisMount.current) {
+        repricedThisMount.current = true;
+        const ids = [feat?.id, ...live.slice(0, 4).map((p) => p.id)].filter(
+          (x): x is string => !!x,
+        );
+        if (ids.length) {
+          await artistProjectService.repriceMany(ids);
+          const again = await Promise.all([
+            discoveryService.getFeaturedProject(),
+            discoveryService.getLiveProjects(12),
+          ]);
+          feat = again[0];
+          live = again[1];
+        }
+      }
+
       setFeatured(feat);
       setProjects(live);
       setArtists(rising);

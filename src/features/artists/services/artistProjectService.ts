@@ -215,6 +215,16 @@ export const artistProjectService = {
       .select(PROJECT_SELECT)
       .single();
     if (error) throw new Error(error.message);
+
+    // Seed a short deterministic price history so the new project shows a chart
+    // immediately, then re-read so the returned project has the synced price.
+    try {
+      await supabase.rpc('rpc_seed_project_history', { p_project_id: (data as ProjectRow).id });
+      const fresh = await this.getById((data as ProjectRow).id);
+      if (fresh) return fresh;
+    } catch {
+      /* non-critical — fall back to the freshly inserted row */
+    }
     return mapProject(data as ProjectRow);
   },
 
@@ -246,6 +256,19 @@ export const artistProjectService = {
     } catch {
       /* non-critical */
     }
+  },
+
+  /**
+   * Reprice a batch of projects (held or on-screen) so P&L reflects today's
+   * move when the user opens the app. Idempotent + cheaply guarded server-side;
+   * safe to fire non-blocking. Resolves once all settle (never rejects).
+   */
+  async repriceMany(projectIds: string[]): Promise<void> {
+    const ids = Array.from(new Set(projectIds.filter(Boolean)));
+    if (!ids.length) return;
+    await Promise.allSettled(
+      ids.map((id) => supabase.rpc('rpc_reprice_project', { p_project_id: id })),
+    );
   },
 
   /** Artist/owner cancels a project — 100% refund to every backer. */

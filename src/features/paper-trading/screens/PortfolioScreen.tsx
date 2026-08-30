@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Pressable,
@@ -15,6 +15,7 @@ import { AppText, Eyebrow } from '../../../shared/components/ui';
 import { InteractiveLineChart, ChartPoint } from '../components/charts';
 import { positionPnl } from '../domain/pricing';
 import { statusLabel } from '../domain/projectLifecycle';
+import { artistProjectService } from '../../artists/services/artistProjectService';
 import { LiveWaitlistSheet } from '../components/sheets/LiveWaitlistSheet';
 import { analytics } from '../../../services/analytics';
 import {
@@ -74,18 +75,36 @@ export default function PortfolioScreen({ navigation }: { navigation?: NavLike }
   const [scrubPoint, setScrubPoint] = useState<ChartPoint | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [liveSheetOpen, setLiveSheetOpen] = useState(false);
+  const repricedThisMount = useRef(false);
 
   const load = useCallback(async () => {
     if (!user?.id) return;
     setError(null);
     try {
       await paperWalletService.ensureWallet(user.id);
-      const [nextSummary, nextPositions, nextClosed, nextHistory] = await Promise.all([
+      let [nextSummary, nextPositions, nextClosed, nextHistory] = await Promise.all([
         paperWalletService.getPortfolioSummary(user.id),
         paperWalletService.getPositions(user.id),
         paperWalletService.getClosedPositions(user.id),
         paperWalletService.getPortfolioHistory(user.id, range),
       ]);
+
+      // Once per mount: nudge held projects to today's model price so P&L
+      // reflects the latest move even before the daily cron runs.
+      const openIds = nextPositions
+        .filter((p) => p.status === 'open')
+        .map((p) => p.projectId);
+      if (!repricedThisMount.current && openIds.length > 0) {
+        repricedThisMount.current = true;
+        await artistProjectService.repriceMany(openIds);
+        const refreshed = await Promise.all([
+          paperWalletService.getPortfolioSummary(user.id),
+          paperWalletService.getPositions(user.id),
+        ]);
+        nextSummary = refreshed[0];
+        nextPositions = refreshed[1];
+      }
+
       setSummary(nextSummary);
       setPositions(nextPositions.filter((p) => p.status === 'open'));
       setClosed(nextClosed);
