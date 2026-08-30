@@ -19,6 +19,7 @@ import {
 import type { Project } from '../../artists/types/experience';
 import { PAPER_DISCLOSURE_SHORT } from '../../artists/types/experience';
 import { paperWalletService, PaperPosition } from '../services/paperWalletService';
+import { watchlistService } from '../services/watchlistService';
 import { artistProjectService } from '../../artists/services/artistProjectService';
 import { statusLabel, statusTone, canExit } from '../domain/projectLifecycle';
 import { positionPnl, projectedExitProceeds } from '../domain/pricing';
@@ -83,6 +84,8 @@ export default function ProjectDetailScreen({
   const [priceHistory, setPriceHistory] = useState<{ t: number; v: number }[]>([]);
   const [myPosition, setMyPosition] = useState<PaperPosition | null>(null);
   const [exiting, setExiting] = useState(false);
+  const [watched, setWatched] = useState(false);
+  const [watchBusy, setWatchBusy] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -122,6 +125,44 @@ export default function ProjectDetailScreen({
       cancelled = true;
     };
   }, [user?.id, projectId, success]);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      if (!user?.id) {
+        setWatched(false);
+        return;
+      }
+      try {
+        const w = await watchlistService.isWatched(projectId);
+        if (!cancelled) setWatched(w);
+      } catch {
+        /* ignore */
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [user?.id, projectId]);
+
+  const onToggleWatch = useCallback(async () => {
+    if (!user?.id || watchBusy) return;
+    setWatchBusy(true);
+    const next = !watched;
+    setWatched(next); // optimistic
+    try {
+      const confirmed = await watchlistService.toggle(projectId);
+      setWatched(confirmed);
+    } catch (err) {
+      setWatched(!next); // revert
+      Alert.alert(
+        'Could not update saved',
+        err instanceof Error ? err.message : 'Please try again.',
+      );
+    } finally {
+      setWatchBusy(false);
+    }
+  }, [user?.id, watchBusy, watched, projectId]);
 
   useEffect(() => {
     let cancelled = false;
@@ -287,7 +328,13 @@ export default function ProjectDetailScreen({
 
   return (
     <View style={styles.root}>
-      <ProjectHeader project={project} onBack={onBack} onShare={onShare} />
+      <ProjectHeader
+        project={project}
+        onBack={onBack}
+        onShare={onShare}
+        onBookmark={user?.id ? onToggleWatch : undefined}
+        isBookmarked={watched}
+      />
 
       <ScrollView
         style={styles.scroll}

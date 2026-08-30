@@ -19,6 +19,7 @@ type ProjectHeaderProps = {
   project: Project;
   onBack: () => void;
   onBookmark?: () => void;
+  isBookmarked?: boolean;
   onShare?: () => void;
 };
 
@@ -26,6 +27,7 @@ export function ProjectHeader({
   project,
   onBack,
   onBookmark,
+  isBookmarked,
   onShare,
 }: ProjectHeaderProps) {
   const insets = useSafeAreaInsets();
@@ -51,10 +53,15 @@ export function ProjectHeader({
             onPress={onBookmark}
             style={styles.iconBtn}
             accessibilityRole="button"
-            accessibilityLabel="Bookmark project"
+            accessibilityLabel={isBookmarked ? 'Remove from saved' : 'Save project'}
+            accessibilityState={{ selected: !!isBookmarked }}
             disabled={!onBookmark}
           >
-            <Ionicons name="bookmark-outline" size={22} color={c.textPrimary} />
+            <Ionicons
+              name={isBookmarked ? 'bookmark' : 'bookmark-outline'}
+              size={22}
+              color={isBookmarked ? c.accent : c.textPrimary}
+            />
           </TouchableOpacity>
           <TouchableOpacity
             onPress={onShare}

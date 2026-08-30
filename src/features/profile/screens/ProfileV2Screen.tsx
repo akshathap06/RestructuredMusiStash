@@ -1,7 +1,6 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import {
   ActivityIndicator,
-  Alert,
   Image,
   Pressable,
   RefreshControl,
@@ -349,11 +348,11 @@ export default function ProfileV2Screen({ navigation }: Props) {
             <View style={styles.rowsList}>
               <ListRow
                 label="Watchlist & saved"
-                onPress={() => Alert.alert('Coming soon')}
+                onPress={() => navigation.navigate('Watchlist')}
               />
               <ListRow
                 label="Transaction history"
-                onPress={() => Alert.alert('Coming soon')}
+                onPress={() => navigation.navigate('TransactionHistory')}
               />
               <ListRow
                 label="Explore projects"

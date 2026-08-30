@@ -27,6 +27,7 @@ export type PaperTransaction = {
   units?: number;
   price?: number;
   projectId?: string;
+  projectTitle?: string;
   createdAt: string;
   meta?: Record<string, unknown>;
 };
@@ -119,6 +120,7 @@ type TransactionRow = {
   price: number | string | null;
   balance_after: number | string | null;
   created_at: string;
+  artist_projects?: { title: string | null } | null;
 };
 
 const num = (v: number | string | null | undefined): number => {
@@ -170,6 +172,7 @@ function mapTransaction(row: TransactionRow): PaperTransaction {
     units: row.units != null ? num(row.units) : undefined,
     price: row.price != null ? num(row.price) : undefined,
     projectId: row.project_id ?? undefined,
+    projectTitle: row.artist_projects?.title ?? undefined,
     createdAt: row.created_at,
     meta: row.balance_after != null ? { balanceAfter: num(row.balance_after) } : undefined,
   };
@@ -244,7 +247,7 @@ class PaperWalletService {
   async getTransactions(userId: string): Promise<PaperTransaction[]> {
     const { data, error } = await supabase
       .from('paper_transactions')
-      .select('*')
+      .select('*, artist_projects(title)')
       .eq('user_id', userId)
       .order('created_at', { ascending: false });
     if (error) throw new Error(error.message);
