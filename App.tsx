@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { NavigationContainer } from '@react-navigation/native';
+import { NavigationContainer, getFocusedRouteNameFromRoute } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { StatusBar } from 'expo-status-bar';
@@ -652,11 +652,17 @@ function MainTabs({ navigation: parentNavigation }: { navigation: any }) {
       <Tab.Screen
         name="Profile"
         component={ProfileStackNavigator}
-        options={({ navigation }) => ({
-          header: () => (
-            <UniversalHeader navigation={navigation} title="Profile" subtitle="" />
-          ),
-        })}
+        options={({ navigation, route }) => {
+          // Nested settings/help/legal screens render their own header — don't
+          // stack the "Profile" universal header on top of them (dead gap).
+          const nested = getFocusedRouteNameFromRoute(route) ?? 'ProfileMain';
+          return {
+            headerShown: nested === 'ProfileMain',
+            header: () => (
+              <UniversalHeader navigation={navigation} title="Profile" subtitle="" />
+            ),
+          };
+        }}
       />
     </Tab.Navigator>
   );
