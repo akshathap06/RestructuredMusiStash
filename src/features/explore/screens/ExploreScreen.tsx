@@ -44,7 +44,7 @@ export default function ExploreScreen(props: any) {
           <PostsScreen navigation={props.navigation} route={props.route} />
         )}
         {tab === 'artists' && (
-          <BrowseArtistsScreen navigation={props.navigation} />
+          <BrowseArtistsScreen navigation={props.navigation} embedded />
         )}
         {tab === 'search' && (
           <SearchScreen navigation={props.navigation} route={props.route} />

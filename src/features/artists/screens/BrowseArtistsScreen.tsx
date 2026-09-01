@@ -12,6 +12,7 @@ import {
   Dimensions,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { supabase } from '../../../lib/supabase';
 
 const { width } = Dimensions.get('window');
@@ -31,7 +32,16 @@ interface Artist {
   status: string;
 }
 
-const BrowseArtistsScreen = ({ navigation }: { navigation: any }) => {
+const BrowseArtistsScreen = ({
+  navigation,
+  embedded = false,
+}: {
+  navigation: any;
+  // When rendered inside ExploreScreen the parent already pads the notch;
+  // standalone (hamburger menu) it needs to pad the top safe area itself.
+  embedded?: boolean;
+}) => {
+  const insets = useSafeAreaInsets();
   // State
   const [artists, setArtists] = useState<Artist[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -409,11 +419,29 @@ const BrowseArtistsScreen = ({ navigation }: { navigation: any }) => {
   return (
     <View style={styles.container}>
       {/* Compact Header with Search */}
-      <View style={styles.headerSection}>
+      <View
+        style={[
+          styles.headerSection,
+          !embedded && { paddingTop: insets.top + 8 },
+        ]}
+      >
         <View style={styles.headerRow}>
-          <View>
-            <Text style={styles.headerTitle}>Future Investments</Text>
-            <Text style={styles.headerSubtitle}>Discover artists to back</Text>
+          <View style={styles.headerLeft}>
+            {!embedded && (
+              <TouchableOpacity
+                onPress={() => navigation.goBack()}
+                style={styles.backButton}
+                hitSlop={8}
+                accessibilityRole="button"
+                accessibilityLabel="Go back"
+              >
+                <Ionicons name="chevron-back" size={24} color="#FFFFFF" />
+              </TouchableOpacity>
+            )}
+            <View>
+              <Text style={styles.headerTitle}>Future Investments</Text>
+              <Text style={styles.headerSubtitle}>Discover artists to back</Text>
+            </View>
           </View>
           {!isLoading && artists.length > 0 && (
             <Text style={styles.artistCount}>{totalCount}</Text>
@@ -495,6 +523,16 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'flex-start',
     marginBottom: 10,
+  },
+  headerLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
+  backButton: {
+    marginLeft: -6,
+    marginRight: 6,
+    padding: 4,
   },
   headerTitle: {
     fontSize: 22,
