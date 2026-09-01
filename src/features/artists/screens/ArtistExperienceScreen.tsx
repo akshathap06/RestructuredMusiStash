@@ -8,6 +8,7 @@ import {
   Alert,
   ActivityIndicator,
   Pressable,
+  Share,
 } from 'react-native';
 import { useNavigation, useRoute, useFocusEffect } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -120,10 +121,27 @@ function ArtistExperienceContent() {
     }
   }, [user?.id, ownerUserId, isOwner, isFollowing]);
 
+  const onShare = useCallback(async () => {
+    if (!artist) return;
+    const url = `https://musistash.com/artist/${artist.id}`;
+    try {
+      await Share.share(
+        {
+          title: artist.name,
+          message: `Check out ${artist.name} on MusiStash\n${url}`,
+          url,
+        },
+        { subject: `${artist.name} on MusiStash`, dialogTitle: `Share ${artist.name}` },
+      );
+    } catch {
+      // user dismissed the share sheet
+    }
+  }, [artist]);
+
   const onMore = useCallback(() => {
     if (!artist) return;
     const buttons: any[] = [
-      { text: 'Share', style: 'default' },
+      { text: 'Share', style: 'default', onPress: onShare },
       { text: 'Cancel', style: 'cancel' },
     ];
     if (isOwner) {
@@ -137,7 +155,7 @@ function ArtistExperienceContent() {
       });
     }
     Alert.alert(artist.name, undefined, buttons);
-  }, [artist, isOwner, onCreateProject, navigation]);
+  }, [artist, isOwner, onCreateProject, navigation, onShare]);
 
   if (loading) {
     return (
