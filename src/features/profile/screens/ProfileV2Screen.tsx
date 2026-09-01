@@ -19,7 +19,7 @@ import type { PortfolioSummary } from '../../paper-trading/services/paperWalletS
 import { artistProjectService } from '../../artists/services/artistProjectService';
 import type { Project } from '../../artists/types/experience';
 import { followService } from '../../social/services/followService';
-import { colors, formatCompact, formatMoney } from '../components/v2/tokens';
+import { colors, formatCompact, formatMoney, radius, space } from '../components/v2/tokens';
 import StatStrip from '../components/v2/StatStrip';
 import ListRow from '../components/v2/ListRow';
 
@@ -193,6 +193,7 @@ export default function ProfileV2Screen({ navigation }: Props) {
             <Ionicons name="settings-outline" size={22} color={colors.textSecondary} />
           </Pressable>
         </View>
+        <View style={styles.headerDivider} />
 
         {artist ? (
           <>
@@ -312,6 +313,7 @@ export default function ProfileV2Screen({ navigation }: Props) {
               <ListRow label="Settings" onPress={() => navigation.navigate('Settings')} />
             </View>
 
+            <View style={styles.footerDivider} />
             <Text style={styles.caption}>
               Your art comes first — numbers exist to prove the demand.
             </Text>
@@ -324,9 +326,12 @@ export default function ProfileV2Screen({ navigation }: Props) {
               onPress={goPortfolio}
               accessibilityRole="button"
               accessibilityLabel="Open paper portfolio"
-              style={({ pressed }) => [styles.section, pressed && styles.pressed]}
+              style={({ pressed }) => [styles.portfolioCard, pressed && styles.pressed]}
             >
-              <Text style={styles.sectionLabel}>PAPER PORTFOLIO</Text>
+              <View style={styles.portfolioCardHead}>
+                <Text style={styles.sectionLabel}>PAPER PORTFOLIO</Text>
+                <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
+              </View>
               <Text style={styles.portfolioTotal}>{formatMoney(summary?.total ?? 0)}</Text>
               <Text style={[styles.dayChange, { color: dayColor }]}>
                 {dayPct >= 0 ? '+' : ''}
@@ -361,6 +366,7 @@ export default function ProfileV2Screen({ navigation }: Props) {
               />
             </View>
 
+            <View style={styles.footerDivider} />
             <Text style={styles.disclosure}>{PAPER_DISCLOSURE}</Text>
           </>
         )}
@@ -381,28 +387,33 @@ const styles = StyleSheet.create({
   },
   content: {
     paddingHorizontal: 20,
-    paddingTop: 12,
+    paddingTop: 16,
     paddingBottom: 48,
   },
   pressed: {
-    opacity: 0.7,
+    opacity: 0.6,
   },
   headerRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 28,
+    marginBottom: 20,
+  },
+  headerDivider: {
+    height: StyleSheet.hairlineWidth,
+    backgroundColor: colors.borderSubtle,
+    marginBottom: space.section,
   },
   avatar: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
+    width: 58,
+    height: 58,
+    borderRadius: 29,
+    borderWidth: 1,
+    borderColor: colors.borderSubtle,
   },
   avatarFallback: {
     backgroundColor: colors.surface,
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: colors.borderSubtle,
   },
   avatarInitials: {
     color: colors.textSecondary,
@@ -418,6 +429,7 @@ const styles = StyleSheet.create({
     color: colors.textPrimary,
     fontSize: 22,
     fontWeight: '700',
+    letterSpacing: -0.3,
   },
   email: {
     color: colors.textMuted,
@@ -430,38 +442,54 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   section: {
-    marginBottom: 24,
+    marginBottom: 20,
   },
   sectionLabel: {
     color: colors.textMuted,
     fontSize: 11,
-    letterSpacing: 0.8,
+    fontWeight: '600',
+    letterSpacing: 1,
     textTransform: 'uppercase',
     marginBottom: 8,
   },
+  portfolioCard: {
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.borderSubtle,
+    borderRadius: radius.card,
+    padding: 16,
+    marginBottom: space.section,
+  },
+  portfolioCardHead: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
   portfolioTotal: {
     color: colors.textPrimary,
-    fontSize: 30,
+    fontSize: 32,
     fontWeight: '700',
+    letterSpacing: -0.5,
     fontVariant: ['tabular-nums'],
   },
   dayChange: {
     fontSize: 13,
     fontWeight: '500',
-    marginTop: 4,
+    marginTop: 6,
     fontVariant: ['tabular-nums'],
   },
   stripWrap: {
-    marginBottom: 24,
+    marginBottom: space.section,
   },
   rowsList: {
     gap: 10,
-    marginBottom: 24,
+    marginBottom: space.section,
   },
   artistName: {
     color: colors.textPrimary,
-    fontSize: 26,
+    fontSize: 24,
     fontWeight: '700',
+    letterSpacing: -0.4,
   },
   genreLine: {
     flexDirection: 'row',
@@ -482,23 +510,23 @@ const styles = StyleSheet.create({
   ctaRow: {
     flexDirection: 'row',
     gap: 10,
-    marginBottom: 28,
+    marginBottom: space.section,
   },
   ctaPrimary: {
     flex: 1,
-    height: 44,
-    borderRadius: 12,
+    height: 46,
+    borderRadius: radius.card,
     backgroundColor: colors.accent,
     alignItems: 'center',
     justifyContent: 'center',
   },
   ctaPrimarySmall: {
-    height: 36,
-    borderRadius: 10,
+    height: 38,
+    borderRadius: 12,
     backgroundColor: colors.accent,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: 14,
+    paddingHorizontal: 16,
   },
   ctaPrimaryText: {
     color: '#FFFFFF',
@@ -506,10 +534,10 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   ctaSecondary: {
-    height: 44,
-    borderRadius: 12,
+    height: 46,
+    borderRadius: radius.card,
     borderWidth: 1,
-    borderColor: colors.borderSubtle,
+    borderColor: colors.borderStrong,
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: 22,
@@ -523,17 +551,17 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: colors.surface,
-    borderRadius: 12,
+    borderRadius: radius.card,
     borderWidth: 1,
     borderColor: colors.borderSubtle,
     padding: 12,
-    marginBottom: 24,
+    marginBottom: space.section,
     gap: 12,
   },
   artwork: {
     width: 64,
     height: 64,
-    borderRadius: 8,
+    borderRadius: 10,
     backgroundColor: colors.background,
   },
   projectInfo: {
@@ -556,11 +584,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     backgroundColor: colors.surface,
-    borderRadius: 12,
+    borderRadius: radius.card,
     borderWidth: 1,
     borderColor: colors.borderSubtle,
     padding: 14,
-    marginBottom: 24,
+    marginBottom: space.section,
     gap: 12,
   },
   emptyProjectText: {
@@ -568,9 +596,15 @@ const styles = StyleSheet.create({
     fontSize: 14,
     flexShrink: 1,
   },
+  footerDivider: {
+    height: StyleSheet.hairlineWidth,
+    backgroundColor: colors.borderSubtle,
+    marginBottom: 16,
+  },
   caption: {
     color: colors.textSecondary,
     fontSize: 12,
+    lineHeight: 17,
     marginBottom: 8,
   },
   disclosure: {

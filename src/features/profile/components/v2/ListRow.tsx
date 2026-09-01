@@ -1,7 +1,7 @@
 import React from 'react';
 import { Pressable, StyleSheet, Text } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { colors } from './tokens';
+import { colors, radius } from './tokens';
 
 type Props = {
   label: string;
@@ -25,8 +25,8 @@ export default function ListRow({ label, onPress, accessibilityLabel }: Props) {
 
 const styles = StyleSheet.create({
   row: {
-    height: 52,
-    borderRadius: 12,
+    height: 54,
+    borderRadius: radius.card,
     borderWidth: 1,
     borderColor: colors.borderSubtle,
     backgroundColor: colors.surface,
