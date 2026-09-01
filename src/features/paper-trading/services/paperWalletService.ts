@@ -61,7 +61,7 @@ export type PortfolioHistoryPoint = {
   v: number;
 };
 
-export type HistoryRange = '1D' | '1W' | '1M' | '3M' | '1Y' | 'ALL';
+export type HistoryRange = '1D' | '1W' | '1M' | '3M' | '1Y' | 'YTD';
 
 const walletKey = (userId: string) => `@ms/paper_wallet_${userId}`;
 const positionsKey = (userId: string) => `@ms/paper_positions_${userId}`;
@@ -244,12 +244,15 @@ class PaperWalletService {
       0
     );
     const cash = wallet.availableBalance;
-    return {
-      cash,
-      positionsValue,
-      total: cash + positionsValue,
-      dayChangePct: 0,
-    };
+    const total = cash + positionsValue;
+
+    // Derive "Today" from the 1D synthetic series so the header and the 1D
+    // chart agree. Still a placeholder until real snapshots exist.
+    const day = buildRangeSeries(userId, '1D', total);
+    const dayOpen = day[0]?.v ?? total;
+    const dayChangePct = dayOpen > 0 ? ((total - dayOpen) / dayOpen) * 100 : 0;
+
+    return { cash, positionsValue, total, dayChangePct };
   }
 
   async getPortfolioHistory(
@@ -257,43 +260,125 @@ class PaperWalletService {
     range: HistoryRange
   ): Promise<PortfolioHistoryPoint[]> {
     const summary = await this.getPortfolioSummary(userId);
-    const total = summary.total;
-    const pointCount = RANGE_POINTS[range];
-    const spanMs = RANGE_SPAN_MS[range];
-    const end = Date.now();
-    const start = end - spanMs;
-
-    // Synthetic placeholder series around current total until real snapshots exist.
-    const points: PortfolioHistoryPoint[] = [];
-    for (let i = 0; i < pointCount; i++) {
-      const t = start + (spanMs * i) / Math.max(pointCount - 1, 1);
-      const progress = i / Math.max(pointCount - 1, 1);
-      const wobble = Math.sin(progress * Math.PI * 2) * 0.012 + (progress - 0.5) * 0.02;
-      const v = Math.max(0, total * (1 + wobble * (total > 0 ? 1 : 0)));
-      points.push({ t, v: i === pointCount - 1 ? total : v });
-    }
-    return points;
+    return buildRangeSeries(userId, range, summary.total);
   }
 }
 
 const RANGE_POINTS: Record<HistoryRange, number> = {
-  '1D': 24,
-  '1W': 28,
-  '1M': 30,
-  '3M': 36,
-  '1Y': 52,
-  ALL: 48,
+  '1D': 48,
+  '1W': 56,
+  '1M': 60,
+  '3M': 66,
+  '1Y': 80,
+  YTD: 80,
 };
 
 const DAY = 24 * 60 * 60 * 1000;
+// YTD span is computed per call (Jan 1 -> now); this is only a fallback.
 const RANGE_SPAN_MS: Record<HistoryRange, number> = {
   '1D': DAY,
   '1W': 7 * DAY,
   '1M': 30 * DAY,
   '3M': 90 * DAY,
   '1Y': 365 * DAY,
-  ALL: 365 * DAY,
+  YTD: 365 * DAY,
 };
+
+/** Milliseconds from the start of the current calendar year until now. */
+function ytdSpanMs(): number {
+  const now = new Date();
+  const startOfYear = new Date(now.getFullYear(), 0, 1).getTime();
+  return Math.max(DAY, now.getTime() - startOfYear);
+}
+
+/** Largest plausible net move across the whole window (fraction of value). */
+const RANGE_NET_MOVE: Record<HistoryRange, number> = {
+  '1D': 0.015,
+  '1W': 0.04,
+  '1M': 0.08,
+  '3M': 0.16,
+  '1Y': 0.45,
+  YTD: 0.35,
+};
+
+/** Per-step wander amplitude (fraction of the trend value). */
+const RANGE_STEP_VOL: Record<HistoryRange, number> = {
+  '1D': 0.004,
+  '1W': 0.006,
+  '1M': 0.008,
+  '3M': 0.01,
+  '1Y': 0.014,
+  YTD: 0.012,
+};
+
+function hashSeed(str: string): number {
+  let h = 2166136261;
+  for (let i = 0; i < str.length; i++) {
+    h ^= str.charCodeAt(i);
+    h = Math.imul(h, 16777619);
+  }
+  return h >>> 0;
+}
+
+/** mulberry32 — small deterministic PRNG so a range's shape is stable per user. */
+function mulberry32(seed: number): () => number {
+  let s = seed >>> 0;
+  return () => {
+    s = (s + 0x6d2b79f5) | 0;
+    let t = Math.imul(s ^ (s >>> 15), 1 | s);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+/**
+ * Synthetic portfolio series for one range. Each range gets its own seed, so
+ * the curves have genuinely different shapes; a Brownian bridge keeps the last
+ * point exactly on `endValue` while a seeded net move sets the macro trend.
+ * Placeholder until real portfolio snapshots are recorded.
+ */
+function buildRangeSeries(
+  userId: string,
+  range: HistoryRange,
+  endValue: number
+): PortfolioHistoryPoint[] {
+  const n = RANGE_POINTS[range];
+  const span = range === 'YTD' ? ytdSpanMs() : RANGE_SPAN_MS[range];
+  const end = Date.now();
+  const start = end - span;
+  const denom = Math.max(n - 1, 1);
+
+  if (!(endValue > 0)) {
+    return Array.from({ length: n }, (_, i) => ({
+      t: start + (span * i) / denom,
+      v: 0,
+    }));
+  }
+
+  const rand = mulberry32(hashSeed(`${userId}:${range}`));
+  const netReturn = (rand() * 2 - 1) * RANGE_NET_MOVE[range];
+  const startValue = endValue / (1 + netReturn);
+  const stepVol = RANGE_STEP_VOL[range];
+
+  // Random walk, then detrend to a bridge that is 0 at both ends.
+  const walk: number[] = [0];
+  for (let i = 1; i < n; i++) {
+    walk.push(walk[i - 1] + (rand() * 2 - 1) * stepVol);
+  }
+  const drift = walk[n - 1];
+
+  const points: PortfolioHistoryPoint[] = [];
+  for (let i = 0; i < n; i++) {
+    const bridge = walk[i] - (drift * i) / denom;
+    const trend = startValue + (endValue - startValue) * (i / denom);
+    const v = Math.max(0, trend * (1 + bridge));
+    points.push({
+      t: start + (span * i) / denom,
+      v: i === n - 1 ? endValue : v,
+    });
+  }
+  return points;
+}
 
 export const paperWalletService = new PaperWalletService();
 export default paperWalletService;

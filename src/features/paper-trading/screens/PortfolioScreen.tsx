@@ -33,7 +33,16 @@ const C = {
   negative: '#EF4444',
 };
 
-const RANGES: HistoryRange[] = ['1D', '1W', '1M', '3M', '1Y', 'ALL'];
+const RANGES: HistoryRange[] = ['1D', '1W', '1M', '3M', '1Y', 'YTD'];
+
+const RANGE_CHANGE_LABEL: Record<HistoryRange, string> = {
+  '1D': 'Today',
+  '1W': 'Past week',
+  '1M': 'Past month',
+  '3M': 'Past 3 months',
+  '1Y': 'Past year',
+  YTD: 'YTD',
+};
 
 const DISCLOSURE =
   'Paper trading simulation only. No real money, securities, ownership, or financial returns are being offered.';
@@ -157,17 +166,22 @@ export default function PortfolioScreen({ navigation }: PortfolioScreenProps) {
   }
 
   const total = summary?.total ?? 0;
-  const dayChangePct = summary?.dayChangePct ?? 0;
-  const dayChangeAmount = (total * dayChangePct) / 100;
-  const dayPositive = dayChangeAmount >= 0;
-  const changeColor = dayPositive ? C.positive : C.negative;
+
+  // Change over the selected range, from the same series the chart draws, so
+  // the value/sign/colour here always match the line.
+  const rangeOpen = history.length > 0 ? history[0].v : total;
+  const rangeClose = history.length > 0 ? history[history.length - 1].v : total;
+  const rangeChangeAmount = rangeClose - rangeOpen;
+  const rangeChangePct = rangeOpen > 0 ? (rangeChangeAmount / rangeOpen) * 100 : 0;
+  const rangePositive = rangeChangeAmount >= 0;
+  const changeColor = rangePositive ? C.positive : C.negative;
 
   const headerValue = scrubPoint ? scrubPoint.v : total;
   const headerSub = scrubPoint
     ? formatScrubDate(scrubPoint.t, range)
-    : `${formatSignedMoney(dayChangeAmount)} (${dayPositive ? '+' : ''}${dayChangePct.toFixed(
+    : `${formatSignedMoney(rangeChangeAmount)} (${rangePositive ? '+' : ''}${rangeChangePct.toFixed(
         2
-      )}%) Today`;
+      )}%) ${RANGE_CHANGE_LABEL[range]}`;
 
   return (
     <ScrollView
