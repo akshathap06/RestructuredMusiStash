@@ -20,6 +20,7 @@ const { colors } = MusiStashTheme;
 
 type Props = {
   tracks: Track[];
+  title?: string;
   onSeeAll?: () => void;
 };
 
@@ -43,14 +44,14 @@ function showTrackOverflow(track: Track) {
   ]);
 }
 
-export function PopularTracks({ tracks, onSeeAll }: Props) {
+export function PopularTracks({ tracks, title = 'Popular', onSeeAll }: Props) {
   const { activeTrack, isPlaying, playTrack } = usePlayback();
   const visible = tracks.slice(0, 3);
 
   return (
     <View style={styles.section}>
       <View style={styles.header}>
-        <Text style={styles.title}>Popular</Text>
+        <Text style={styles.title}>{title}</Text>
         {tracks.length > 3 && onSeeAll ? (
           <Pressable
             onPress={onSeeAll}

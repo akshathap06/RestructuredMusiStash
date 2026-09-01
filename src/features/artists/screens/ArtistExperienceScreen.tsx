@@ -16,11 +16,14 @@ import { useAuth } from '../../auth/AuthContext';
 import { followService } from '../../social/services/followService';
 import { PlaybackProvider, usePlayback } from '../hooks/PlaybackContext';
 import { ArtistHero } from '../components/experience/ArtistHero';
+import { ArtistStats } from '../components/experience/ArtistStats';
 import { PopularTracks } from '../components/experience/PopularTracks';
+import { ArtistProjects } from '../components/experience/ArtistProjects';
+import { ArtistCollaborations } from '../components/experience/ArtistCollaborations';
 import { CurrentProjectTeaser } from '../components/experience/CurrentProjectTeaser';
 import { MiniPlayer } from '../components/experience/MiniPlayer';
 import { artistExperienceService } from '../services/artistExperienceService';
-import type { Artist } from '../types/experience';
+import type { Artist, Project } from '../types/experience';
 
 const { colors } = MusiStashTheme;
 
@@ -32,6 +35,7 @@ function ArtistExperienceContent() {
   const { playTrack } = usePlayback();
 
   const [artist, setArtist] = useState<Artist | null>(null);
+  const [projects, setProjects] = useState<Project[]>([]);
   const [ownerUserId, setOwnerUserId] = useState<string>('');
   const [isOwner, setIsOwner] = useState(false);
   const [isFollowing, setIsFollowing] = useState(false);
@@ -51,9 +55,11 @@ function ArtistExperienceContent() {
       if (!result) {
         setError('Artist not found');
         setArtist(null);
+        setProjects([]);
         return;
       }
       setArtist(result.artist);
+      setProjects(result.projects ?? []);
       setOwnerUserId(result.userId);
       setIsOwner(result.isOwner);
 
@@ -175,7 +181,12 @@ function ArtistExperienceContent() {
           <Text style={styles.bio}>{artist.bio}</Text>
         ) : null}
 
-        <PopularTracks tracks={artist.popularTracks} />
+        <ArtistStats
+          monthlyListeners={artist.monthlyListeners}
+          totalStreams={artist.totalStreams}
+        />
+
+        <PopularTracks tracks={artist.popularTracks} title="Popular music" />
 
         {artist.currentProject ? (
           <CurrentProjectTeaser
@@ -205,6 +216,15 @@ function ArtistExperienceContent() {
             <Text style={styles.createHint}>No active paper project yet.</Text>
           </View>
         )}
+
+        <ArtistProjects
+          projects={projects}
+          isOwner={isOwner}
+          onOpen={(projectId) => navigation.navigate('ProjectDetail', { projectId })}
+          onCreate={onCreateProject}
+        />
+
+        <ArtistCollaborations collaborations={artist.collaborations ?? []} />
       </ScrollView>
 
       <View style={[styles.miniWrap, { paddingBottom: Math.max(insets.bottom, 8) }]}>
