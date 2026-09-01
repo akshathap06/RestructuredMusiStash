@@ -21,7 +21,7 @@ Constants for this copy live in `src/features/artists/types/experience.ts` (`PAP
 - **Expo 54 / React Native 0.81 / React 19 / TypeScript (strict)**
 - **Supabase** (auth, Postgres, storage, edge functions) — project ref `dwbetxanfumneukrqodd`, client config hardcoded in `src/lib/supabase.ts`
 - **React Navigation 7** (stack + bottom tabs), React Context for state, AsyncStorage for the paper wallet
-- No chart library — the portfolio chart is dependency-free (see §6)
+- Charts: `react-native-svg` only — the portfolio chart is a hand-built smoothed `<Path>` (see §6)
 
 ```bash
 npm install
@@ -103,7 +103,7 @@ Rules: dark-first, minimal, no gradients/glow, `fontVariant: ['tabular-nums']` f
 
 - **Wallet**: `paperWalletService` (`paper-trading/services/`) — AsyncStorage ledger, $10,000 grant, positions, transactions, `getPortfolioHistory(userId, range)` generates chart series. **This is the seam to swap to Supabase** (tables already exist, §7).
 - **PortfolioScreen** (Portfolio tab): Robinhood-style — big tabular value header, scrubbing swaps header to the scrubbed point, range selector (1D–ALL), buying power, position rows.
-- **`InteractiveLineChart`** (`paper-trading/components/charts/`): built from plain Views (rotated 2px segments + PanResponder scrub, ≤60 segments). **Deliberately no react-native-svg** — adding native deps breaks the prebuilt dev client.
+- **`InteractiveLineChart`** (`paper-trading/components/charts/`): `react-native-svg`. One monotone-cubic smoothed `<Path>` (no overshoot) + gradient area fill, dashed baseline at the period-open value, PanResponder scrub with a crosshair + dot. Same `points` / `onScrub` API as before. Adding `react-native-svg` is a native dep — **the dev client must be rebuilt** (`npx expo run:ios` / EAS).
 - **`PaperTradeScreen`**: backing flow with confirmation + disclosure.
 
 ---
