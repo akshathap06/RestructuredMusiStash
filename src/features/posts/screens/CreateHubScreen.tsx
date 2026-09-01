@@ -9,7 +9,6 @@ import {
   Alert,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '../../../contexts/AuthContext';
 import { supabase } from '../../../lib/supabase';
 
@@ -20,7 +19,6 @@ interface UserProfiles {
 
 export default function CreateHubScreen({ navigation }: { navigation: any }) {
   const { user } = useAuth();
-  const insets = useSafeAreaInsets();
   const [loading, setLoading] = useState(true);
   const [profiles, setProfiles] = useState<UserProfiles>({
     hasArtistProfile: false,
@@ -97,7 +95,7 @@ export default function CreateHubScreen({ navigation }: { navigation: any }) {
 
   if (loading) {
     return (
-      <View style={[styles.container, { paddingTop: insets.top }]}>
+      <View style={styles.container}>
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="small" color="#3B82F6" />
         </View>
@@ -106,8 +104,9 @@ export default function CreateHubScreen({ navigation }: { navigation: any }) {
   }
 
   return (
-    <View style={[styles.container, { paddingTop: insets.top }]}>
-      <ScrollView 
+    // The tab's UniversalHeader already clears the notch — don't re-pad the top.
+    <View style={styles.container}>
+      <ScrollView
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
@@ -249,7 +248,7 @@ const styles = StyleSheet.create({
     paddingBottom: 100,
   },
   header: {
-    paddingTop: 20,
+    paddingTop: 16,
     paddingBottom: 24,
   },
   title: {

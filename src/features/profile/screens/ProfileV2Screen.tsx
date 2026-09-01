@@ -10,7 +10,6 @@ import {
   Text,
   View,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../auth/AuthContext';
 import { supabase } from '../../../lib/supabase';
@@ -141,11 +140,11 @@ export default function ProfileV2Screen({ navigation }: Props) {
 
   if (loading) {
     return (
-      <SafeAreaView style={styles.screen} edges={['top']}>
+      <View style={styles.screen}>
         <View style={styles.center}>
           <ActivityIndicator color={colors.textSecondary} />
         </View>
-      </SafeAreaView>
+      </View>
     );
   }
 
@@ -155,7 +154,8 @@ export default function ProfileV2Screen({ navigation }: Props) {
   const dayColor = dayPct >= 0 ? colors.positive : colors.negative;
 
   return (
-    <SafeAreaView style={styles.screen} edges={['top']}>
+    // The tab's UniversalHeader already clears the notch — don't re-pad the top.
+    <View style={styles.screen}>
       <ScrollView
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
@@ -371,7 +371,7 @@ export default function ProfileV2Screen({ navigation }: Props) {
           </>
         )}
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 }
 

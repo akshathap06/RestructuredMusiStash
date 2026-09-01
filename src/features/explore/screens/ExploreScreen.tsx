@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MusiStashTheme } from '../../../styles/theme';
 import PostsScreen from '../../posts/screens/PostsScreen';
 import BrowseArtistsScreen from '../../artists/screens/BrowseArtistsScreen';
@@ -15,11 +14,11 @@ const TABS: { key: ExploreTab; label: string }[] = [
 ];
 
 export default function ExploreScreen(props: any) {
-  const insets = useSafeAreaInsets();
   const [tab, setTab] = useState<ExploreTab>('foryou');
 
   return (
-    <View style={[styles.container, { paddingTop: insets.top }]}>
+    // The tab's UniversalHeader already clears the notch — don't re-pad the top.
+    <View style={styles.container}>
       <View style={styles.segmentRow}>
         {TABS.map(({ key, label }) => {
           const active = tab === key;
@@ -58,6 +57,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: MusiStashTheme.colors.background,
+    paddingTop: MusiStashTheme.spacing[3],
   },
   segmentRow: {
     flexDirection: 'row',
