@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { NavigationContainer, getFocusedRouteNameFromRoute } from '@react-navigation/native';
+import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { StatusBar } from 'expo-status-bar';
@@ -512,6 +512,15 @@ function ProfileStackNavigator() {
           fontWeight: 'bold',
         },
       }}
+      screenListeners={({ navigation, route }) => ({
+        // Nested settings/help/legal screens draw their own header — hide the
+        // parent tab's "Profile" universal header so it isn't stacked on top.
+        focus: () => {
+          navigation
+            .getParent()
+            ?.setOptions({ headerShown: route.name === 'ProfileMain' });
+        },
+      })}
     >
       <ProfileStack.Screen 
         name="ProfileMain" 
@@ -652,17 +661,13 @@ function MainTabs({ navigation: parentNavigation }: { navigation: any }) {
       <Tab.Screen
         name="Profile"
         component={ProfileStackNavigator}
-        options={({ navigation, route }) => {
-          // Nested settings/help/legal screens render their own header — don't
-          // stack the "Profile" universal header on top of them (dead gap).
-          const nested = getFocusedRouteNameFromRoute(route) ?? 'ProfileMain';
-          return {
-            headerShown: nested === 'ProfileMain',
-            header: () => (
-              <UniversalHeader navigation={navigation} title="Profile" subtitle="" />
-            ),
-          };
-        }}
+        options={({ navigation }) => ({
+          // headerShown is toggled by ProfileStackNavigator's screenListeners:
+          // shown on ProfileMain, hidden on nested settings/help/legal screens.
+          header: () => (
+            <UniversalHeader navigation={navigation} title="Profile" subtitle="" />
+          ),
+        })}
       />
     </Tab.Navigator>
   );

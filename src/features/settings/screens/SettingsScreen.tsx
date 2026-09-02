@@ -173,7 +173,7 @@ export default function SettingsScreen({ navigation }: any) {
         contentContainerStyle={{ paddingBottom: insets.bottom + 20 }}
       >
         {/* Account Section */}
-        <View style={styles.section}>
+        <View style={[styles.section, styles.firstSection]}>
           <Text style={styles.sectionTitle}>Account</Text>
           <View style={styles.sectionContent}>
             <SettingsItem
@@ -355,6 +355,9 @@ const styles = StyleSheet.create({
   },
   section: {
     marginTop: 24,
+  },
+  firstSection: {
+    marginTop: 8,
   },
   sectionTitle: {
     fontSize: 13,
