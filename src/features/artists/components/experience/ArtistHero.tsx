@@ -28,6 +28,7 @@ type Props = {
   isFollowing: boolean;
   onBack?: () => void;
   onMore?: () => void;
+  onShareCard?: () => void;
 };
 
 export function ArtistHero({
@@ -37,6 +38,7 @@ export function ArtistHero({
   isFollowing,
   onBack,
   onMore,
+  onShareCard,
 }: Props) {
   const insets = useSafeAreaInsets();
   const playScale = useRef(new Animated.Value(1)).current;
@@ -68,15 +70,26 @@ export function ArtistHero({
         >
           <Ionicons name="chevron-back" size={24} color={colors.textPrimary} />
         </Pressable>
-        <Pressable
-          onPress={onMore}
-          disabled={!onMore}
-          style={styles.iconBtn}
-          accessibilityRole="button"
-          accessibilityLabel="More options"
-        >
-          <Ionicons name="ellipsis-horizontal" size={22} color={colors.textPrimary} />
-        </Pressable>
+        <View style={styles.topActions}>
+          <Pressable
+            onPress={onShareCard}
+            disabled={!onShareCard}
+            style={styles.iconBtn}
+            accessibilityRole="button"
+            accessibilityLabel="Create a shareable card"
+          >
+            <Ionicons name="share-outline" size={21} color={colors.textPrimary} />
+          </Pressable>
+          <Pressable
+            onPress={onMore}
+            disabled={!onMore}
+            style={styles.iconBtn}
+            accessibilityRole="button"
+            accessibilityLabel="More options"
+          >
+            <Ionicons name="ellipsis-horizontal" size={22} color={colors.textPrimary} />
+          </Pressable>
+        </View>
       </View>
 
       <View style={styles.bottom}>
@@ -198,6 +211,7 @@ const styles = StyleSheet.create({
     color: colors.textPrimary,
   },
   followTextActive: { color: colors.onAccent },
+  topActions: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   spacer: { flex: 1 },
   playBtn: {
     width: 60,

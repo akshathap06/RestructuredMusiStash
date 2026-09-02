@@ -23,6 +23,7 @@ import { ArtistProjects } from '../components/experience/ArtistProjects';
 import { ArtistCollaborations } from '../components/experience/ArtistCollaborations';
 import { CurrentProjectTeaser } from '../components/experience/CurrentProjectTeaser';
 import { MiniPlayer } from '../components/experience/MiniPlayer';
+import { ShareCardSheet } from '../components/share/ShareCardSheet';
 import { artistExperienceService } from '../services/artistExperienceService';
 import type { Artist, Project } from '../types/experience';
 
@@ -42,6 +43,7 @@ function ArtistExperienceContent() {
   const [isFollowing, setIsFollowing] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [shareCardOpen, setShareCardOpen] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -141,7 +143,8 @@ function ArtistExperienceContent() {
   const onMore = useCallback(() => {
     if (!artist) return;
     const buttons: any[] = [
-      { text: 'Share', style: 'default', onPress: onShare },
+      { text: 'Share card', style: 'default', onPress: () => setShareCardOpen(true) },
+      { text: 'Share link', style: 'default', onPress: onShare },
       { text: 'Cancel', style: 'cancel' },
     ];
     if (isOwner) {
@@ -193,6 +196,7 @@ function ArtistExperienceContent() {
           onPlayFeatured={onPlayFeatured}
           onBack={() => navigation.goBack()}
           onMore={onMore}
+          onShareCard={() => setShareCardOpen(true)}
         />
 
         {artist.bio ? (
@@ -248,6 +252,13 @@ function ArtistExperienceContent() {
       <View style={[styles.miniWrap, { paddingBottom: Math.max(insets.bottom, 8) }]}>
         <MiniPlayer artistName={artist.name} queue={artist.popularTracks} />
       </View>
+
+      <ShareCardSheet
+        visible={shareCardOpen}
+        onClose={() => setShareCardOpen(false)}
+        artist={artist}
+        projects={projects}
+      />
     </View>
   );
 }
