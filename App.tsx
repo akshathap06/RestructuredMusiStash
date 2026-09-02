@@ -59,6 +59,7 @@ import ChangelogScreen from './src/features/settings/screens/ChangelogScreen';
 
 // --- AI Feature ---
 import AgenticManagerScreen from './src/features/ai/screens/AgenticManagerScreen';
+import CreateAgentScreen from './src/features/ai/screens/CreateAgentScreen';
 
 // --- V2 Paper Trading / Explore / Waitlist ---
 import PortfolioScreen from './src/features/paper-trading/screens/PortfolioScreen';
@@ -790,6 +791,13 @@ function MainStack() {
         <Stack.Screen
           name="AgenticManager"
           component={AgenticManagerScreen}
+          options={{ headerShown: false }}
+        />
+      )}
+      {featureFlags.AGENTIC_MANAGER_ENABLED && (
+        <Stack.Screen
+          name="CreateAgent"
+          component={CreateAgentScreen}
           options={{ headerShown: false }}
         />
       )}
