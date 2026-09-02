@@ -216,7 +216,7 @@ export default function LoginScreen({ navigation }: any) {
           <View style={styles.header}>
             <View style={styles.logoContainer}>
               <Image 
-                source={require('../../../../assets/logo-final.png')}
+                source={require('../../../../assets/brand/lockup-reversed.png')}
                 style={styles.logoImageFull}
                 resizeMode="contain"
               />

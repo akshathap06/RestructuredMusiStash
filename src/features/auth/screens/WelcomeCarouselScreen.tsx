@@ -229,7 +229,7 @@ const WelcomeCarouselScreen: React.FC<WelcomeCarouselScreenProps> = ({ navigatio
       {/* Logo */}
       <View style={styles.logoContainer}>
         <Image 
-          source={require('../../../../assets/logo-final.png')} 
+          source={require('../../../../assets/brand/lockup-reversed.png')} 
           style={styles.logoImage}
           resizeMode="contain"
         />

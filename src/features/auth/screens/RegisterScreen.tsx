@@ -91,7 +91,7 @@ export default function RegisterScreen({ navigation }: any) {
             </TouchableOpacity>
             <View style={styles.logoContainer}>
               <Image 
-                source={require('../../../../assets/ms_logo5.png')}
+                source={require('../../../../assets/brand/mark-reversed.png')}
                 style={styles.logoImage}
                 resizeMode="contain"
               />

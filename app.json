@@ -6,12 +6,12 @@
     "sdkVersion": "54.0.0",
     "scheme": "musistash",
     "orientation": "portrait",
-    "icon": "./assets/AppCoverLogo.png",
+    "icon": "./assets/brand/app-icon.png",
     "userInterfaceStyle": "dark",
     "splash": {
-      "image": "./assets/splash-cover.png",
+      "image": "./assets/brand/splash.png",
       "resizeMode": "cover",
-      "backgroundColor": "#000000"
+      "backgroundColor": "#16192A"
     },
     "assetBundlePatterns": [
       "**/*"
@@ -40,8 +40,8 @@
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/AppCoverLogo.png",
-        "backgroundColor": "#000000"
+        "foregroundImage": "./assets/brand/app-icon-android.png",
+        "backgroundColor": "#16192A"
       },
       "package": "com.musistash.app",
       "versionCode": 1,
@@ -69,7 +69,7 @@
       ]
     },
     "web": {
-      "favicon": "./assets/favicon.png"
+      "favicon": "./assets/brand/favicon.png"
     },
     "plugins": [
       "expo-image-picker",

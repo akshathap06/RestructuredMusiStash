@@ -155,7 +155,7 @@ const AnimatedSplash = ({ children, isReady }: { children: React.ReactNode; isRe
         }}
       >
         <ImageBackground
-          source={require('./assets/splash-cover.png')}
+          source={require('./assets/brand/splash.png')}
           style={{
             flex: 1,
             justifyContent: 'center',

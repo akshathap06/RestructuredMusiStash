@@ -298,7 +298,7 @@ export function ArtistShareCard({ model, format, width, onArtworkLoad }: Props) 
           ]}
         >
           <Image
-            source={require('../../../../../assets/logo-final.png')}
+            source={require('../../../../../assets/brand/lockup-reversed.png')}
             style={{ width: 72 * s, height: 17 * s }}
             resizeMode="contain"
             accessibilityIgnoresInvertColors
