@@ -113,16 +113,6 @@ export function ArtistHero({
             </Text>
           </Pressable>
 
-          <Pressable
-            onPress={onMore}
-            disabled={!onMore}
-            style={styles.overflowBtn}
-            accessibilityRole="button"
-            accessibilityLabel="More artist options"
-          >
-            <Ionicons name="ellipsis-horizontal" size={20} color={colors.textPrimary} />
-          </Pressable>
-
           <View style={styles.spacer} />
 
           <Animated.View style={{ transform: [{ scale: playScale }] }}>
@@ -208,16 +198,6 @@ const styles = StyleSheet.create({
     color: colors.textPrimary,
   },
   followTextActive: { color: colors.onAccent },
-  overflowBtn: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    marginLeft: 10,
-    borderWidth: 1,
-    borderColor: colors.borderSubtle,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
   spacer: { flex: 1 },
   playBtn: {
     width: 60,

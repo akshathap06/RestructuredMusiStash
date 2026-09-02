@@ -88,9 +88,15 @@ export const kalebArtist: Artist = {
   genre: 'Alternative R&B',
   location: 'Atlanta, GA',
   monthlyListeners: 248000,
+  totalStreams: 4820000,
   heroImageUrl: ART.hero,
   bio: 'Music for the hours when the city is quiet and your thoughts aren’t.',
   accentColor: '#4B9CD3',
+  collaborations: [
+    { id: 'c1', name: 'NOVA', role: 'Producer', avatarUrl: ART.track },
+    { id: 'c2', name: 'J. REYES', role: 'Featured vocals', avatarUrl: ART.studio },
+    { id: 'c3', name: 'LATE BLOOM', role: 'Co-writer', avatarUrl: ART.cover },
+  ],
   popularTracks: [
     {
       id: 't1',

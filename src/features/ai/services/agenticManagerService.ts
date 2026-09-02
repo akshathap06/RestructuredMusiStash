@@ -117,30 +117,6 @@ export interface EmailData {
 }
 
 class AgenticManagerService {
-  // Audio Analysis
-  async uploadTrackForAnalysis(file: any, artistId: string): Promise<PyAudioAnalysisFeatures | null> {
-    try {
-      const formData = new FormData();
-      formData.append('file', file);
-      formData.append('artist_id', artistId);
-
-      const response = await fetch(`${BACKEND_URL}/api/agent/upload-track`, {
-        method: 'POST',
-        body: formData,
-      });
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      const result = await response.json();
-      return result.analysis || null;
-    } catch (error) {
-      console.error('Error uploading track for analysis:', error);
-      return null;
-    }
-  }
-
   // Venue Discovery
   async discoverVenues(params: {
     location: string;

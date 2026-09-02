@@ -136,16 +136,23 @@ export const artistExperienceService = {
     const projects = await artistProjectService.listForArtist(row.id);
     const current = projects[0];
 
+    const monthlyListeners = Number(row.monthly_listeners) || 0;
+
     const artist: Artist = {
       id: row.id,
       name: (row.artist_name || 'Artist').toUpperCase(),
       verified: !!(row.is_verified || row.status === 'approved'),
       genre: genreLabel(row.genre),
       location: row.location || row.city || '—',
-      monthlyListeners: Number(row.monthly_listeners) || 0,
+      monthlyListeners,
+      // Static placeholder: real streaming totals are not tracked yet.
+      // Prefer a stored value, otherwise derive a stable figure from listeners.
+      totalStreams: Number(row.total_streams) || Math.round(monthlyListeners * 9.2),
       heroImageUrl: profileUrl,
       bio: row.bio || row.biography || undefined,
       accentColor: '#4B9CD3',
+      // Collaborations are not modelled in the DB yet — empty until wired up.
+      collaborations: [],
       popularTracks,
       currentProject: current ? toSummary(current) : undefined,
     };

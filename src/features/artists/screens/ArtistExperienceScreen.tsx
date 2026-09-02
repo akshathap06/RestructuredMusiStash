@@ -8,6 +8,7 @@ import {
   Alert,
   ActivityIndicator,
   Pressable,
+  Share,
 } from 'react-native';
 import { useNavigation, useRoute, useFocusEffect } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -16,11 +17,14 @@ import { useAuth } from '../../auth/AuthContext';
 import { followService } from '../../social/services/followService';
 import { PlaybackProvider, usePlayback } from '../hooks/PlaybackContext';
 import { ArtistHero } from '../components/experience/ArtistHero';
+import { ArtistStats } from '../components/experience/ArtistStats';
 import { PopularTracks } from '../components/experience/PopularTracks';
+import { ArtistProjects } from '../components/experience/ArtistProjects';
+import { ArtistCollaborations } from '../components/experience/ArtistCollaborations';
 import { CurrentProjectTeaser } from '../components/experience/CurrentProjectTeaser';
 import { MiniPlayer } from '../components/experience/MiniPlayer';
 import { artistExperienceService } from '../services/artistExperienceService';
-import type { Artist } from '../types/experience';
+import type { Artist, Project } from '../types/experience';
 
 const { colors } = MusiStashTheme;
 
@@ -32,6 +36,7 @@ function ArtistExperienceContent() {
   const { playTrack } = usePlayback();
 
   const [artist, setArtist] = useState<Artist | null>(null);
+  const [projects, setProjects] = useState<Project[]>([]);
   const [ownerUserId, setOwnerUserId] = useState<string>('');
   const [isOwner, setIsOwner] = useState(false);
   const [isFollowing, setIsFollowing] = useState(false);
@@ -51,9 +56,11 @@ function ArtistExperienceContent() {
       if (!result) {
         setError('Artist not found');
         setArtist(null);
+        setProjects([]);
         return;
       }
       setArtist(result.artist);
+      setProjects(result.projects ?? []);
       setOwnerUserId(result.userId);
       setIsOwner(result.isOwner);
 
@@ -114,10 +121,27 @@ function ArtistExperienceContent() {
     }
   }, [user?.id, ownerUserId, isOwner, isFollowing]);
 
+  const onShare = useCallback(async () => {
+    if (!artist) return;
+    const url = `https://musistash.com/artist/${artist.id}`;
+    try {
+      await Share.share(
+        {
+          title: artist.name,
+          message: `Check out ${artist.name} on MusiStash\n${url}`,
+          url,
+        },
+        { subject: `${artist.name} on MusiStash`, dialogTitle: `Share ${artist.name}` },
+      );
+    } catch {
+      // user dismissed the share sheet
+    }
+  }, [artist]);
+
   const onMore = useCallback(() => {
     if (!artist) return;
     const buttons: any[] = [
-      { text: 'Share', style: 'default' },
+      { text: 'Share', style: 'default', onPress: onShare },
       { text: 'Cancel', style: 'cancel' },
     ];
     if (isOwner) {
@@ -131,7 +155,7 @@ function ArtistExperienceContent() {
       });
     }
     Alert.alert(artist.name, undefined, buttons);
-  }, [artist, isOwner, onCreateProject, navigation]);
+  }, [artist, isOwner, onCreateProject, navigation, onShare]);
 
   if (loading) {
     return (
@@ -175,7 +199,12 @@ function ArtistExperienceContent() {
           <Text style={styles.bio}>{artist.bio}</Text>
         ) : null}
 
-        <PopularTracks tracks={artist.popularTracks} />
+        <ArtistStats
+          monthlyListeners={artist.monthlyListeners}
+          totalStreams={artist.totalStreams}
+        />
+
+        <PopularTracks tracks={artist.popularTracks} title="Popular music" />
 
         {artist.currentProject ? (
           <CurrentProjectTeaser
@@ -205,6 +234,15 @@ function ArtistExperienceContent() {
             <Text style={styles.createHint}>No active paper project yet.</Text>
           </View>
         )}
+
+        <ArtistProjects
+          projects={projects}
+          isOwner={isOwner}
+          onOpen={(projectId) => navigation.navigate('ProjectDetail', { projectId })}
+          onCreate={onCreateProject}
+        />
+
+        <ArtistCollaborations collaborations={artist.collaborations ?? []} />
       </ScrollView>
 
       <View style={[styles.miniWrap, { paddingBottom: Math.max(insets.bottom, 8) }]}>

@@ -16,6 +16,13 @@ export type ProjectSummary = {
   paperBackingTotal: number;
 };
 
+export type Collaboration = {
+  id: string;
+  name: string;
+  role?: string;
+  avatarUrl?: string;
+};
+
 export type Artist = {
   id: string;
   name: string;
@@ -23,10 +30,12 @@ export type Artist = {
   genre: string;
   location: string;
   monthlyListeners: number;
+  totalStreams?: number;
   heroImageUrl: string;
   bio?: string;
   accentColor?: string;
   popularTracks: Track[];
+  collaborations?: Collaboration[];
   currentProject?: ProjectSummary;
 };
 
