@@ -18,6 +18,12 @@ import * as ImagePicker from 'expo-image-picker';
 import { useAuth } from '../../auth/AuthContext';
 import { ArtistAccountService, ArtistAccount } from '../services/artistAccountService';
 import { uploadProfileImage } from '../services/imageUploadService';
+import { SpotifyConnect } from '../components/onboarding/SpotifyConnect';
+import {
+  resolveTopTracks,
+  saveArtistMetrics,
+  type SpotifyArtist,
+} from '../services/musicMetricsService';
 
 const colors = {
   background: '#0A0A0C',
@@ -50,6 +56,8 @@ export default function CreateArtistV2Screen({ navigation }: { navigation: any }
   const [avatarUri, setAvatarUri] = useState<string | null>(null);
   const [bio, setBio] = useState('');
   const [monthlyListeners, setMonthlyListeners] = useState('');
+  const [totalStreams, setTotalStreams] = useState('');
+  const [spotify, setSpotify] = useState<SpotifyArtist | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
@@ -119,16 +127,39 @@ export default function CreateArtistV2Screen({ navigation }: { navigation: any }
         console.warn('Artist photo upload failed, continuing without images', e);
       }
 
+      const streams = parseInt(totalStreams.replace(/[^0-9]/g, ''), 10);
+
       const result = await ArtistAccountService.createArtistAccount({
         user_id: user.id,
         artist_name: artistName.trim(),
         bio: bio.trim() || undefined,
-        genre: genres,
-        profile_photo: avatarUrl,
+        // Spotify's own genres beat the chips when the profile is linked.
+        genre: spotify?.genres.length ? spotify.genres.slice(0, 3) : genres,
+        profile_photo: avatarUrl ?? spotify?.imageUrl ?? undefined,
         banner_photo: bannerUrl,
         location: location.trim() || undefined,
         monthly_listeners: Number.isNaN(listeners) ? undefined : listeners,
       });
+
+      // Metrics + the playable track list are a second write: the profile is
+      // already usable if Spotify or iTunes is slow or down.
+      if (result.success && result.data?.id) {
+        try {
+          const tracks = await resolveTopTracks(
+            artistName.trim(),
+            spotify?.spotifyId ?? null,
+          );
+          await saveArtistMetrics(result.data.id, {
+            spotify,
+            tracks,
+            monthlyListeners: Number.isNaN(listeners) ? null : listeners,
+            totalStreams: Number.isNaN(streams) ? null : streams,
+          });
+        } catch (e) {
+          console.warn('Artist metrics lookup failed; profile saved without them', e);
+        }
+      }
+
       if (result.success) {
         Alert.alert('Profile created', 'Welcome to your artist profile.', [
           { text: 'OK', onPress: () => navigation.replace('ArtistExperience', { userId: user.id }) },
@@ -269,6 +300,25 @@ export default function CreateArtistV2Screen({ navigation }: { navigation: any }
 
           {step === 1 && (
             <View>
+              <Text style={styles.stepTitle}>Link your Spotify</Text>
+              <Text style={styles.stepBlurb}>
+                We pull your follower count, popularity, genres and top tracks
+                straight from Spotify, so you don&apos;t have to type them in and
+                listeners can trust them.
+              </Text>
+              <SpotifyConnect
+                initialQuery={artistName}
+                selected={spotify}
+                onSelect={setSpotify}
+              />
+              <Text style={styles.stepNote}>
+                Optional — you can skip this and enter your numbers by hand.
+              </Text>
+            </View>
+          )}
+
+          {step === 2 && (
+            <View>
               <Text style={styles.stepTitle}>Set the scene</Text>
               <Pressable
                 accessibilityRole="button"
@@ -302,7 +352,7 @@ export default function CreateArtistV2Screen({ navigation }: { navigation: any }
             </View>
           )}
 
-          {step === 2 && (
+          {step === 3 && (
             <View>
               <Text style={styles.stepTitle}>Tell your story</Text>
               <View style={styles.preview}>
@@ -336,12 +386,26 @@ export default function CreateArtistV2Screen({ navigation }: { navigation: any }
                 keyboardType="number-pad"
                 accessibilityLabel="Monthly listeners, optional"
               />
+              <Text style={styles.label}>Total streams (optional)</Text>
+              <TextInput
+                style={styles.input}
+                value={totalStreams}
+                onChangeText={setTotalStreams}
+                placeholder="0"
+                placeholderTextColor={colors.textMuted}
+                keyboardType="number-pad"
+                accessibilityLabel="Total streams, optional"
+              />
+              <Text style={styles.stepNote}>
+                Spotify does not publish these two figures to anyone, so they
+                show on your profile as self-reported until we can verify them.
+              </Text>
             </View>
           )}
         </ScrollView>
 
         <View style={styles.footer}>
-          {step < 2 ? (
+          {step < 3 ? (
             <Pressable
               accessibilityRole="button"
               accessibilityLabel="Continue"
@@ -397,7 +461,19 @@ const styles = StyleSheet.create({
   },
   progressSegmentActive: { backgroundColor: colors.accent },
   content: { padding: 20, paddingBottom: 40 },
-  stepTitle: { color: colors.textPrimary, fontSize: 24, fontWeight: '700', marginBottom: 20 },
+  stepTitle: { color: colors.textPrimary, fontSize: 24, fontWeight: '700', marginBottom: 10 },
+  stepBlurb: {
+    color: colors.textSecondary,
+    fontSize: 14,
+    lineHeight: 20,
+    marginBottom: 18,
+  },
+  stepNote: {
+    color: colors.textMuted,
+    fontSize: 12.5,
+    lineHeight: 18,
+    marginTop: 14,
+  },
   label: { color: colors.textSecondary, fontSize: 13, marginBottom: 8, marginTop: 4 },
   input: {
     backgroundColor: colors.surface,

@@ -23,14 +23,29 @@ export type Collaboration = {
   avatarUrl?: string;
 };
 
+export type ArtistReport = {
+  score: number;
+  label: string;
+  summary: string;
+  factors: { label: string; value: string; detail: string }[];
+  generatedAt: string;
+};
+
 export type Artist = {
   id: string;
   name: string;
   verified: boolean;
   genre: string;
   location: string;
+  /** Typed in by the artist — Spotify does not expose this. */
   monthlyListeners: number;
   totalStreams?: number;
+  /** True when monthlyListeners / totalStreams came from the artist, not an API. */
+  listenersSelfReported?: boolean;
+  spotifyFollowers?: number;
+  spotifyPopularity?: number;
+  spotifyUrl?: string | null;
+  report?: ArtistReport | null;
   heroImageUrl: string;
   bio?: string;
   accentColor?: string;

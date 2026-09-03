@@ -18,6 +18,7 @@ import { followService } from '../../social/services/followService';
 import { PlaybackProvider, usePlayback } from '../hooks/PlaybackContext';
 import { ArtistHero } from '../components/experience/ArtistHero';
 import { ArtistStats } from '../components/experience/ArtistStats';
+import { ArtistReportCard } from '../components/experience/ArtistReportCard';
 import { PopularTracks } from '../components/experience/PopularTracks';
 import { ArtistProjects } from '../components/experience/ArtistProjects';
 import { ArtistCollaborations } from '../components/experience/ArtistCollaborations';
@@ -206,7 +207,11 @@ function ArtistExperienceContent() {
         <ArtistStats
           monthlyListeners={artist.monthlyListeners}
           totalStreams={artist.totalStreams}
+          spotifyFollowers={artist.spotifyFollowers}
+          selfReported={artist.listenersSelfReported}
         />
+
+        {artist.report ? <ArtistReportCard report={artist.report} /> : null}
 
         <PopularTracks tracks={artist.popularTracks} title="Popular music" />
 

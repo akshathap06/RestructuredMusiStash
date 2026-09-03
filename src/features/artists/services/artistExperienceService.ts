@@ -2,6 +2,7 @@ import { supabase } from '../../../lib/supabase';
 import type { Artist, Track, Project, ProjectSummary } from '../types/experience';
 import { kalebArtist, KALEB_ARTIST_ID } from '../data/kalebDemo';
 import { artistProjectService } from './artistProjectService';
+import { refreshIfStale } from './musicMetricsService';
 
 const FALLBACK_HERO =
   'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=1200&q=80';
@@ -25,6 +26,21 @@ function genreLabel(genre: unknown): string {
   if (Array.isArray(genre) && genre.length) return String(genre[0]);
   if (typeof genre === 'string' && genre.trim()) return genre;
   return 'Artist';
+}
+
+/** artist_profiles.top_tracks -> Track, keeping the preview URL playable. */
+function cachedTracksToTracks(raw: unknown, artworkFallback: string): Track[] {
+  if (!Array.isArray(raw)) return [];
+  return raw
+    .filter((t: any) => t && t.title)
+    .map((t: any, i: number) => ({
+      id: String(t.id ?? `track-${i}`),
+      title: String(t.title),
+      artworkUrl: t.artworkUrl || artworkFallback,
+      audioUrl: t.previewUrl || undefined,
+      durationSeconds: Number(t.durationSeconds) || 30,
+      playCount: t.popularity ? Number(t.popularity) : undefined,
+    }));
 }
 
 function postsToTracks(posts: any[], artworkFallback: string): Track[] {
@@ -128,7 +144,10 @@ export const artistExperienceService = {
       posts = data || [];
     }
 
-    let popularTracks = postsToTracks(posts, avatarUrl);
+    // Cached top tracks (Spotify ordering + iTunes preview audio) are the real
+    // catalogue; posts are only a fallback for artists who have not linked one.
+    let popularTracks = cachedTracksToTracks(row.top_tracks, avatarUrl);
+    if (popularTracks.length === 0) popularTracks = postsToTracks(posts, avatarUrl);
     // The seeded Kaleb demo has no posts — keep its curated track list.
     if (popularTracks.length === 0 && row.id === KALEB_ARTIST_ID) {
       popularTracks = kalebArtist.popularTracks;
@@ -145,9 +164,15 @@ export const artistExperienceService = {
       genre: genreLabel(row.genre),
       location: row.location || row.city || '—',
       monthlyListeners,
-      // Static placeholder: real streaming totals are not tracked yet.
-      // Prefer a stored value, otherwise derive a stable figure from listeners.
-      totalStreams: Number(row.total_streams) || Math.round(monthlyListeners * 9.2),
+      // Only ever the stored figure. This previously derived a number from
+      // monthly listeners, which put an invented stream count on the public
+      // profile and on the share card.
+      totalStreams: Number(row.total_streams) || undefined,
+      listenersSelfReported: row.listeners_self_reported !== false,
+      spotifyFollowers: row.spotify_followers ? Number(row.spotify_followers) : undefined,
+      spotifyPopularity: row.spotify_popularity ?? undefined,
+      spotifyUrl: row.spotify_profile_url ?? null,
+      report: (row.artist_report as Artist['report']) ?? null,
       heroImageUrl: profileUrl,
       bio: row.bio || row.biography || undefined,
       accentColor: '#4B9CD3',
@@ -156,6 +181,16 @@ export const artistExperienceService = {
       popularTracks,
       currentProject: current ? toSummary(current) : undefined,
     };
+
+    // Cached Spotify metrics and preview URLs go stale. Refresh behind the
+    // rendered profile rather than making every open wait on two network calls;
+    // the next load picks up the fresher row.
+    void refreshIfStale({
+      id: row.id,
+      artist_name: row.artist_name || '',
+      spotify_artist_id: row.spotify_artist_id,
+      top_tracks_updated_at: row.top_tracks_updated_at,
+    }).catch(() => undefined);
 
     return {
       artist,
