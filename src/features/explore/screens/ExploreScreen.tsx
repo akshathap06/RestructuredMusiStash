@@ -14,6 +14,7 @@ import { useAuth } from '../../auth/AuthContext';
 import { MusiStashTheme } from '../../../styles/theme';
 import { AppText, Eyebrow } from '../../../shared/components/ui';
 import { ChipRow } from '../../../shared/components/ui/Chip';
+import { FeaturedCarousel } from '../components/FeaturedCarousel';
 import { paperWalletService } from '../../paper-trading/services/paperWalletService';
 import { artistProjectService } from '../../artists/services/artistProjectService';
 import {
@@ -44,7 +45,7 @@ export default function ExploreScreen(props: any) {
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [filter, setFilter] = useState('All');
-  const [featured, setFeatured] = useState<DiscoveryProject | null>(null);
+  const [featured, setFeatured] = useState<DiscoveryProject[]>([]);
   const [projects, setProjects] = useState<DiscoveryProject[]>([]);
   const [artists, setArtists] = useState<DiscoveryArtist[]>([]);
   const [buyingPower, setBuyingPower] = useState<number | null>(null);
@@ -54,7 +55,7 @@ export default function ExploreScreen(props: any) {
     setError(null);
     try {
       let [feat, live, rising] = await Promise.all([
-        discoveryService.getFeaturedProject(),
+        discoveryService.getFeaturedProjects(8),
         discoveryService.getLiveProjects(12),
         discoveryService.getRisingArtists(8),
       ]);
@@ -63,13 +64,13 @@ export default function ExploreScreen(props: any) {
       // (and any P&L elsewhere) reflect today's move.
       if (!repricedThisMount.current) {
         repricedThisMount.current = true;
-        const ids = [feat?.id, ...live.slice(0, 4).map((p) => p.id)].filter(
-          (x): x is string => !!x,
-        );
+        const ids = [...feat.slice(0, 4), ...live.slice(0, 4)]
+          .map((p) => p.id)
+          .filter((x): x is string => !!x);
         if (ids.length) {
           await artistProjectService.repriceMany(ids);
           const again = await Promise.all([
-            discoveryService.getFeaturedProject(),
+            discoveryService.getFeaturedProjects(8),
             discoveryService.getLiveProjects(12),
           ]);
           feat = again[0];
@@ -117,10 +118,11 @@ export default function ExploreScreen(props: any) {
     }
   };
 
+  const featuredIds = useMemo(() => new Set(featured.map((p) => p.id)), [featured]);
   const carousel = useMemo(() => {
-    const rest = projects.filter((p) => p.id !== featured?.id);
+    const rest = projects.filter((p) => !featuredIds.has(p.id));
     return discoveryService.sortSection(rest, filter);
-  }, [projects, featured?.id, filter]);
+  }, [projects, featuredIds, filter]);
 
   const openProject = (id: string) => parentNav?.navigate?.('ProjectDetail', { projectId: id });
   const openArtist = (id: string) =>
@@ -168,60 +170,7 @@ export default function ExploreScreen(props: any) {
         </AppText>
       ) : null}
 
-      {featured && (
-        <Pressable
-          style={styles.feature}
-          onPress={() => openProject(featured.id)}
-          accessibilityRole="button"
-          accessibilityLabel={`${featured.artistName} — ${featured.title}, ${featured.percent}% backed`}
-        >
-          <View style={styles.featureArt}>
-            {featured.artworkUrl ? (
-              <Image source={{ uri: featured.artworkUrl }} style={StyleSheet.absoluteFill} />
-            ) : (
-              <View style={[StyleSheet.absoluteFill, styles.artFallback]} />
-            )}
-            <View style={styles.featureScrim} />
-            <View style={styles.featurePill}>
-              <AppText variant="eyebrow" color={c.onAccent}>
-                {`CLOSING IN ${featured.daysRemaining} DAYS`}
-              </AppText>
-            </View>
-            <View style={styles.featureCaption}>
-              <Eyebrow color={c.textSecondary}>{featured.artistName}</Eyebrow>
-              <AppText variant="h2" style={styles.featureTitle} numberOfLines={2}>
-                {featured.title}
-              </AppText>
-            </View>
-          </View>
-          <View style={styles.featureBody}>
-            <View style={styles.featureFig}>
-              <AppText variant="h2" tabular color={c.accentSolid}>
-                {money(featured.paperBackingTotal)}
-              </AppText>
-              <AppText variant="bodySmall" color={c.textMuted}>
-                {` of ${money(featured.fundingGoal)}`}
-              </AppText>
-              <AppText variant="label" color={c.textMuted} style={{ marginLeft: 'auto' }}>
-                {featured.type}
-              </AppText>
-            </View>
-            <View style={styles.track}>
-              <View style={[styles.trackFill, { width: `${featured.percent}%` }]} />
-            </View>
-            <View style={styles.featureMeta}>
-              <AppText variant="bodySmall" color={c.textMuted}>
-                {`${featured.paperBackerCount} backers`}
-              </AppText>
-              {featured.aiScore != null && (
-                <AppText variant="bodySmall" color={c.textMuted}>
-                  {`AI momentum ${featured.aiScore}`}
-                </AppText>
-              )}
-            </View>
-          </View>
-        </Pressable>
-      )}
+      <FeaturedCarousel projects={featured} onOpen={openProject} />
 
       <View style={styles.sectionHead}>
         <Eyebrow>MOMENTUM</Eyebrow>

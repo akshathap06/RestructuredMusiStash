@@ -205,7 +205,6 @@ const MENU_SECTIONS: MenuSection[] = [
     label: 'Artists',
     items: [
       { icon: 'people-outline', label: 'Browse artists', route: 'BrowseArtists' },
-      { icon: 'sparkles-outline', label: 'Kaleb (demo profile)', route: 'ArtistExperience' },
       { icon: 'mic-outline', label: 'Become an artist', route: 'CreateArtist' },
     ],
   },
@@ -268,9 +267,6 @@ function UniversalHeader({ navigation, title }: { navigation: any, title: string
           break;
         case 'BrowseArtists':
           navigation.navigate('BrowseArtists');
-          break;
-        case 'ArtistExperience':
-          navigation.navigate('ArtistExperience', { artistId: 'artist_kaleb' });
           break;
         case 'AgenticManager':
           if (featureFlags.AGENTIC_MANAGER_ENABLED) navigation.navigate('AgenticManager');

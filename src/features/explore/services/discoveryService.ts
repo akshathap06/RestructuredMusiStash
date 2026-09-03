@@ -97,16 +97,20 @@ export const discoveryService = {
     return (data ?? []).map(mapProject);
   },
 
-  /** The single most-backed open project for the hero card. */
-  async getFeaturedProject(): Promise<DiscoveryProject | null> {
+  /**
+   * Open projects for the rotating hero, most-backed first. Every project on
+   * the platform gets a turn in the spotlight, so a newly created one shows up
+   * without waiting to out-raise the incumbent.
+   */
+  async getFeaturedProjects(limit = 8): Promise<DiscoveryProject[]> {
     const { data, error } = await supabase
       .from('artist_projects')
       .select(PROJECT_SELECT)
       .in('status', OPEN_STATUSES)
       .order('paper_backing_total', { ascending: false })
-      .limit(1);
+      .limit(limit);
     if (error) throw new Error(error.message);
-    return data && data[0] ? mapProject(data[0]) : null;
+    return (data ?? []).map(mapProject);
   },
 
   /**
