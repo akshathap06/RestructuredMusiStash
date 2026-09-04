@@ -36,6 +36,7 @@ const IntroScreenNew: React.FC<IntroScreenNewProps> = ({ navigation }) => {
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   const [isAppleLoading, setIsAppleLoading] = useState(false);
   const [isAppleAvailable, setIsAppleAvailable] = useState(false);
+  const [waitlistCount, setWaitlistCount] = useState<number | null>(null);
 
   const authCheckTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const authCheckIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -84,6 +85,23 @@ const IntroScreenNew: React.FC<IntroScreenNewProps> = ({ navigation }) => {
     authService.isAppleSignInAvailable().then((v) => {
       if (!cancelled) setIsAppleAvailable(v);
     });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  // ---- live waitlist counter (base 850 + every real signup) ------------
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const { data } = await supabase.rpc('rpc_waitlist_status');
+        const n = (data as { total?: number } | null)?.total;
+        if (!cancelled && typeof n === 'number') setWaitlistCount(n);
+      } catch {
+        /* counter is non-critical */
+      }
+    })();
     return () => {
       cancelled = true;
     };
@@ -191,6 +209,18 @@ const IntroScreenNew: React.FC<IntroScreenNewProps> = ({ navigation }) => {
             price move as a project gains momentum.
           </AppText>
         </Animated.View>
+
+        {waitlistCount != null && (
+          <Animated.View style={[styles.waitlistPill, rise(2)]}>
+            <View style={styles.waitlistDot} />
+            <AppText variant="bodySmall" color={c.textSecondary}>
+              <AppText variant="bodySmall" color={c.accentSolid} tabular>
+                {waitlistCount.toLocaleString()}
+              </AppText>
+              {' already on the waitlist'}
+            </AppText>
+          </Animated.View>
+        )}
 
         {/* Rising-line motif */}
         <Animated.View
@@ -370,6 +400,25 @@ const styles = StyleSheet.create({
     marginTop: 16,
     maxWidth: 340,
     lineHeight: 22,
+  },
+  waitlistPill: {
+    marginTop: 18,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    alignSelf: 'flex-start',
+    paddingVertical: 7,
+    paddingHorizontal: 12,
+    borderRadius: 999,
+    backgroundColor: c.surface,
+    borderWidth: 1,
+    borderColor: c.line,
+  },
+  waitlistDot: {
+    width: 7,
+    height: 7,
+    borderRadius: 4,
+    backgroundColor: c.accentSolid,
   },
   motif: {
     flexDirection: 'row',
