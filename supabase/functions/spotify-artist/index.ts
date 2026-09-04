@@ -59,6 +59,14 @@ async function spotify(path: string): Promise<any> {
   return res.json();
 }
 
+/** Spotify IDs are 22-char base62. Reject anything else so a caller can't
+ *  smuggle path segments or a query string into the Spotify API path. */
+function assertSpotifyId(id: unknown): string {
+  const s = String(id ?? '').trim();
+  if (!/^[A-Za-z0-9]{22}$/.test(s)) throw new Error('Invalid Spotify artist id');
+  return s;
+}
+
 /** Only the fields the app actually renders — the raw payload is huge. */
 function slimArtist(a: any) {
   return {
@@ -80,7 +88,7 @@ Deno.serve(async (req) => {
     const { action } = body;
 
     if (action === 'search') {
-      const q = String(body.query ?? '').trim();
+      const q = String(body.query ?? '').trim().slice(0, 120);
       if (!q) throw new Error('query is required');
       const limit = Math.min(Number(body.limit) || 8, 20);
       const data = await spotify(
@@ -90,15 +98,13 @@ Deno.serve(async (req) => {
     }
 
     if (action === 'artist') {
-      const id = String(body.artistId ?? '').trim();
-      if (!id) throw new Error('artistId is required');
+      const id = assertSpotifyId(body.artistId);
       return json({ artist: slimArtist(await spotify(`/artists/${id}`)) });
     }
 
     if (action === 'topTracks') {
-      const id = String(body.artistId ?? '').trim();
-      if (!id) throw new Error('artistId is required');
-      const market = String(body.market ?? 'US').slice(0, 2).toUpperCase();
+      const id = assertSpotifyId(body.artistId);
+      const market = (String(body.market ?? 'US').match(/^[A-Za-z]{2}$/)?.[0] ?? 'US').toUpperCase();
       const data = await spotify(`/artists/${id}/top-tracks?market=${market}`);
       return json({
         tracks: (data.tracks ?? []).map((t: any) => ({
