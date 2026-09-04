@@ -501,9 +501,18 @@ class ModerationService {
         // Continue anyway - the auth account deletion will still work
       }
 
-      // 15. Delete the auth account (this is the final step)
-      // Note: This requires admin privileges, so we'll rely on Supabase to cascade
-      // The user will be signed out and their auth record will need manual cleanup if not cascaded
+      // 15. Delete the auth.users record itself. The client can't (no service
+      // role), so a SECURITY-verified Edge Function does it; the CASCADE FKs
+      // then purge paper wallets/positions/transactions/watchlist/snapshots,
+      // notifications, financial_profiles, sessions and identities.
+      const { data: fnData, error: fnError } = await supabase.functions.invoke(
+        'delete-account',
+      );
+      if (fnError || (fnData && fnData.error)) {
+        const msg = fnError?.message || fnData?.error || 'Account removal failed';
+        console.error('delete-account function failed:', msg);
+        return { success: false, error: msg };
+      }
 
       // Clear local storage
       await this.clearLocalUserData(userId);
