@@ -2,7 +2,7 @@
   "expo": {
     "name": "MusiStash",
     "slug": "musistash-mobile",
-    "version": "1.0.3",
+    "version": "1.4.0",
     "sdkVersion": "54.0.0",
     "scheme": "musistash",
     "orientation": "portrait",
@@ -19,7 +19,7 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.musistash.mobile",
-      "buildNumber": "13",
+      "buildNumber": "14",
       "infoPlist": {
         "NSCameraUsageDescription": "MusiStash needs camera access to take photos for your profile and project submissions.",
         "NSPhotoLibraryUsageDescription": "MusiStash needs photo library access to select and upload images for your projects.",
