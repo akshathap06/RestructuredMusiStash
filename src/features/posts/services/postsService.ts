@@ -240,13 +240,7 @@ export class PostsService {
 
       const { data, error } = await supabase
         .from('posts')
-        .select(`
-          *,
-          users!posts_user_id_fkey (
-            name,
-            avatar
-          )
-        `)
+        .select('*')
         .eq('user_id', userId)
         .eq('is_active', true)
         .eq('post_status', 'approved')
@@ -259,6 +253,15 @@ export class PostsService {
         // Don't throw error, return empty array instead
         return [];
       }
+
+      // public.users is own-row only, so the author's display fields come from
+      // the public_profiles view (id, name, avatar).
+      const { data: authorRow } = await supabase
+        .from('public_profiles')
+        .select('id, name, avatar')
+        .eq('id', userId)
+        .maybeSingle();
+      const author = (authorRow as { name?: string; avatar?: string } | null) ?? null;
 
       // Get like counts and user liked status for all posts
       const posts = await Promise.all(data?.map(async (post) => {
@@ -281,10 +284,10 @@ export class PostsService {
         }
 
         // Check if user has an artist profile OR service provider profile for display name
-        let displayName = post.users?.name;
+        let displayName = author?.name;
         let userType = 'user';
         let isVerified = false;
-        let userAvatar = post.users?.avatar;
+        let userAvatar: string | null | undefined = author?.avatar;
 
         try {
           // For service posts, prioritize service provider business name
@@ -401,13 +404,7 @@ export class PostsService {
       if (error && error.code === '42P01') {
         const result = await supabase
           .from('posts')
-          .select(`
-            *,
-            users!posts_user_id_fkey (
-              name,
-              avatar
-            )
-          `)
+          .select('*')
           .eq('is_active', true)
           .eq('post_status', 'approved')
           .order('created_at', { ascending: false })
@@ -422,8 +419,26 @@ export class PostsService {
         throw error;
       }
 
+      // public.users is own-row only, so display fields for every author in the
+      // feed come from the public_profiles view in one batched lookup.
+      const authorIds = Array.from(
+        new Set((data ?? []).map((p: any) => p.user_id).filter(Boolean)),
+      );
+      const authorById = new Map<string, { name?: string; avatar?: string }>();
+      if (authorIds.length > 0) {
+        const { data: authorRows } = await supabase
+          .from('public_profiles')
+          .select('id, name, avatar')
+          .in('id', authorIds);
+        for (const a of (authorRows as any[] | null) ?? []) {
+          authorById.set(a.id, { name: a.name ?? undefined, avatar: a.avatar ?? undefined });
+        }
+      }
+
       // Get like counts and user liked status for all posts
       const posts = await Promise.all(data?.map(async (post) => {
+        const author = authorById.get(post.user_id) ?? null;
+
         // Get like count for this post
         const { count: likeCount } = await supabase
           .from('post_likes')
@@ -443,10 +458,10 @@ export class PostsService {
         }
 
         // Check if user has an artist profile for privacy and profile photo
-        let displayName = post.users?.name;
+        let displayName = author?.name;
         let userType = 'user';
         let isVerified = false;
-        let userAvatar = post.users?.avatar;
+        let userAvatar: string | null | undefined = author?.avatar;
 
         try {
           // First try to get approved artist profile

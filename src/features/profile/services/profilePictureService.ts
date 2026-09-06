@@ -83,8 +83,10 @@ export class ProfilePictureService {
       console.log('🔍 Getting profile picture for user:', userId);
       
       // First try to get user data
+      // public.users is own-row only; public_profiles is the sanctioned
+      // window onto another person's display name + avatar.
       const { data: userData } = await supabase
-        .from('users')
+        .from('public_profiles')
         .select('id, name, avatar')
         .eq('id', userId)
         .maybeSingle();

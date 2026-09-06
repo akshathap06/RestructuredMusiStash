@@ -305,12 +305,15 @@ export class FollowService {
       const thirtyDaysAgo = new Date();
       thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
+      // `follows` was renamed to follow_relationships (follower_id/artist_id/
+      // followed_at); this call was never updated, so recent-follower stats
+      // always came back empty.
       const { data: recentFollowers, error } = await supabase
-        .from('follows')
-        .select('created_at')
-        .eq('following_id', userId)
-        .gte('created_at', thirtyDaysAgo.toISOString())
-        .order('created_at', { ascending: false });
+        .from('follow_relationships')
+        .select('followed_at')
+        .eq('artist_id', userId)
+        .gte('followed_at', thirtyDaysAgo.toISOString())
+        .order('followed_at', { ascending: false });
 
       if (error) {
         console.error('Error getting recent followers:', error);

@@ -97,7 +97,7 @@ export default function RegisterScreen({ navigation }: any) {
               />
             </View>
             <Text style={styles.title}>Create your account</Text>
-            <Text style={styles.subtitle}>Paper-invest in music with simulated MusiStash Cash</Text>
+            <Text style={styles.subtitle}>Invest in the artists you believe in</Text>
           </View>
 
           {/* Registration Form */}

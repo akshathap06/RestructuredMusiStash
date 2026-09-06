@@ -221,7 +221,7 @@ export default function LoginScreen({ navigation }: any) {
                 resizeMode="contain"
               />
             </View>
-            <Text style={styles.subtitle}>Sign in to your paper portfolio</Text>
+            <Text style={styles.subtitle}>Sign in to your MusiStash account</Text>
           </View>
 
           {/* Login Form */}

@@ -440,66 +440,29 @@ class ModerationService {
     try {
       console.log('🗑️ Starting account deletion for user:', userId);
 
-      // Delete in order to handle foreign key constraints
-      // 1. Delete notifications
-      await supabase.from('notifications').delete().eq('user_id', userId);
-      
-      // 2. Delete messages
-      await supabase.from('messages').delete().eq('sender_id', userId);
-      
-      // 3. Delete conversations (both as user1 and user2)
-      await supabase.from('conversations').delete().or(`user1_id.eq.${userId},user2_id.eq.${userId}`);
-      
-      // 4. Delete follows
-      await supabase.from('follows').delete().or(`follower_id.eq.${userId},followed_id.eq.${userId}`);
-      
-      // 5. Delete likes
-      await supabase.from('likes').delete().eq('user_id', userId);
-      
-      // 6. Delete comments
+      // Clear the rows this user owns in tables that still exist. Everything
+      // keyed to auth.users by a CASCADE FK (paper wallet/positions/
+      // transactions/watchlist/snapshots, notifications, waitlist entry,
+      // sessions, identities) is removed by the delete-account function below,
+      // so it is not repeated here.
+      //
+      // The marketplace and messaging features were removed from the product;
+      // their tables (messages, conversations, services, service_providers,
+      // portfolio_items, project_requests, work_submissions, user_preferences)
+      // no longer exist, and the old `follows` / `likes` tables were renamed.
+      // Deleting from them just produced failing round-trips.
       await supabase.from('comments').delete().eq('user_id', userId);
-      
-      // 7. Delete posts
+      await supabase.from('post_likes').delete().eq('user_id', userId);
       await supabase.from('posts').delete().eq('user_id', userId);
-      
-      // 8. Delete project requests (as client)
-      await supabase.from('project_requests').delete().eq('client_id', userId);
-      
-      // 9. Delete service provider and related data
-      const { data: serviceProvider } = await supabase
-        .from('service_providers')
-        .select('id')
-        .eq('user_id', userId)
-        .single();
-      
-      if (serviceProvider) {
-        await supabase.from('services').delete().eq('provider_id', serviceProvider.id);
-        await supabase.from('portfolio_items').delete().eq('provider_id', serviceProvider.id);
-        await supabase.from('service_providers').delete().eq('id', serviceProvider.id);
-      }
-      
-      // 10. Delete artist profile
-      await supabase.from('artist_profiles').delete().eq('user_id', userId);
-      
-      // 11. Delete user preferences
-      await supabase.from('user_preferences').delete().eq('user_id', userId);
-      
-      // 12. Delete blocked users
-      await supabase.from('blocked_users').delete().or(`blocker_id.eq.${userId},blocked_user_id.eq.${userId}`);
-      
-      // 13. Delete content reports by this user
-      await supabase.from('content_reports').delete().eq('reporter_id', userId);
-      
-      // 14. Finally delete the user from users table
-      const { error: userDeleteError } = await supabase
-        .from('users')
+      await supabase
+        .from('follow_relationships')
         .delete()
-        .eq('id', userId);
-      
-      if (userDeleteError) {
-        console.error('Error deleting user record:', userDeleteError);
-        // Continue anyway - the auth account deletion will still work
-      }
+        .or(`follower_id.eq.${userId},artist_id.eq.${userId}`);
+      await supabase
+        .from('blocked_users')
+        .delete()
+        .or(`blocker_id.eq.${userId},blocked_user_id.eq.${userId}`);
+      await supabase.from('content_reports').delete().eq('reporter_id', userId);
 
       // 15. Delete the auth.users record itself. The client can't (no service
       // role), so a SECURITY-verified Edge Function does it; the CASCADE FKs
